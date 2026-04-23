@@ -1,143 +1,235 @@
 /**
  * 實價查詢 API
- * 模擬實價登錄資料查詢
+ * 
+ * 使用方式：
+ * 1. 開發模式：預設使用模擬資料
+ * 2. 正式部署：部署 proxyServer.js 或使用 Cloudflare Workers
+ * 3. 設定 VITE_API_URL 環境變數來設定代理伺服器 URL
  */
 
-export const generateMockRecords = (county, district, keyword) => {
-  const mockData = [
-    {
-      id: 'TX-2024-001',
-      address: `${county || '台北市'}${district || '信義區'}${keyword || '信義路'}一段100號`,
-      landCategory: '住宅',
-      houseType: '電梯大樓',
-      transactionDate: '2024-12-15',
-      totalPrice: 2800,
-      unitAreaPrice: 78.5,
-      unitAreaCurrency: '萬元/坪',
-      floor: '12/25',
-      area: 35.6,
-      developer: '遠東建設',
-      hasElevator: true,
-      latitude: 25.0336,
-      longitude: 121.5634,
-    },
-    {
-      id: 'TX-2024-002',
-      address: `${county || '台北市'}${district || '大安區'}${keyword || '復興南路'}二段200號`,
-      landCategory: '商業',
-      houseType: '電梯大樓',
-      transactionDate: '2024-11-28',
-      totalPrice: 3500,
-      unitAreaPrice: 85.2,
-      unitAreaCurrency: '萬元/坪',
-      floor: '8/18',
-      area: 42.3,
-      developer: '宏普投資',
-      hasElevator: true,
-      latitude: 25.0403,
-      longitude: 121.5650,
-    },
-    {
-      id: 'TX-2024-003',
-      address: `${county || '台北市'}${district || '中山區'}${keyword || '南京東路'}三段55號`,
-      landCategory: '住宅',
-      houseType: '無電梯公寓',
-      transactionDate: '2024-10-10',
-      totalPrice: 1500,
-      unitAreaPrice: 52.1,
-      unitAreaCurrency: '萬元/坪',
-      floor: '3/5',
-      area: 28.8,
-      developer: '無',
-      hasElevator: false,
-      latitude: 25.0523,
-      longitude: 121.5456,
-    },
-    {
-      id: 'TX-2024-004',
-      address: `${county || '新北市'}${district || '板橋區'}${keyword || '縣民大道'}88號`,
-      landCategory: '住宅',
-      houseType: '新建層別屋',
-      transactionDate: '2024-09-20',
-      totalPrice: 1800,
-      unitAreaPrice: 38.6,
-      unitAreaCurrency: '萬元/坪',
-      floor: '6/22',
-      area: 46.5,
-      developer: '貴宏建設',
-      hasElevator: true,
-      latitude: 25.0118,
-      longitude: 121.4596,
-    },
-    {
-      id: 'TX-2024-005',
-      address: `${county || '新北市'}${district || '新店區'}${keyword || '中興路'}120號`,
-      landCategory: '住宅',
-      houseType: '透天别墅',
-      transactionDate: '2024-08-05',
-      totalPrice: 2200,
-      unitAreaPrice: 45.3,
-      unitAreaCurrency: '萬元/坪',
-      floor: '3/4',
-      area: 48.6,
-      developer: '無',
-      hasElevator: false,
-      latitude: 24.9750,
-      longitude: 121.5325,
-    },
-    {
-      id: 'TX-2024-006',
-      address: `${county || '台北市'}${district || '中正區'}${keyword || '重慶南路'}一段90號`,
-      landCategory: '商業',
-      houseType: '電梯大樓',
-      transactionDate: '2024-07-18',
-      totalPrice: 4200,
-      unitAreaPrice: 92.8,
-      unitAreaCurrency: '萬元/坪',
-      floor: '10/30',
-      area: 45.2,
-      developer: '聯聚建設',
-      hasElevator: true,
-      latitude: 25.0428,
-      longitude: 121.5135,
-    },
-    {
-      id: 'TX-2024-007',
-      address: `${county || '桃園市'}${district || '桃園區'}${keyword || '市中路'}35號`,
-      landCategory: '住宅',
-      houseType: '電梯大樓',
-      transactionDate: '2024-06-22',
-      totalPrice: 980,
-      unitAreaPrice: 28.5,
-      unitAreaCurrency: '萬元/坪',
-      floor: '15/18',
-      area: 34.4,
-      developer: '台茂建設',
-      hasElevator: true,
-      latitude: 24.9932,
-      longitude: 121.3120,
-    },
-    {
-      id: 'TX-2024-008',
-      address: `${county || '台中市'}${district || '西屯區'}${keyword || '臺灣大道'}四段680號`,
-      landCategory: '商業',
-      houseType: '新建層別屋',
-      transactionDate: '2024-05-30',
-      totalPrice: 2600,
-      unitAreaPrice: 62.3,
-      unitAreaCurrency: '萬元/坪',
-      floor: '9/20',
-      area: 41.7,
-      developer: '日茂建設',
-      hasElevator: true,
-      latitude: 24.1717,
-      longitude: 120.6498,
-    },
-  ]
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/real-estate/search';
 
-  return mockData
+const MOCK_DATA = [
+  {
+    id: 'TX-MOCK-001',
+    address: '新北市板橋區縣民大道一段100號',
+    landCategory: '住宅',
+    houseType: '電梯大樓',
+    tradeCategory: '出售',
+    transactionDate: '2024-12-15',
+    totalPrice: 2800,
+    unitAreaPrice: '78.5',
+    area: '35.6',
+    floor: '12/25',
+    hasElevator: true,
+    detailInfo: {
+      landType: '住宅用地',
+      buildingType: 'RC結構',
+      transactionType: '買賣',
+    },
+  },
+  {
+    id: 'TX-MOCK-002',
+    address: '新北市板橋區府中路200號',
+    landCategory: '商業',
+    houseType: '電梯大樓',
+    tradeCategory: '出售',
+    transactionDate: '2024-11-28',
+    totalPrice: 3500,
+    unitAreaPrice: '85.2',
+    area: '42.3',
+    floor: '8/18',
+    hasElevator: true,
+    detailInfo: {
+      landType: '商業用地',
+      buildingType: '鋼骨結構',
+      transactionType: '買賣',
+    },
+  },
+  {
+    id: 'TX-MOCK-003',
+    address: '台北市信義區信義路三段55號',
+    landCategory: '住宅',
+    houseType: '無電梯公寓',
+    tradeCategory: '出售',
+    transactionDate: '2024-10-10',
+    totalPrice: 1500,
+    unitAreaPrice: '52.1',
+    area: '28.8',
+    floor: '3/5',
+    hasElevator: false,
+    detailInfo: {
+      landType: '住宅用地',
+      buildingType: 'RC結構',
+      transactionType: '買賣',
+    },
+  },
+  {
+    id: 'TX-MOCK-004',
+    address: '桃園市桃園區縣民大道88號',
+    landCategory: '住宅',
+    houseType: '新建層別屋',
+    tradeCategory: '出售',
+    transactionDate: '2024-09-20',
+    totalPrice: 1800,
+    unitAreaPrice: '38.6',
+    area: '46.5',
+    floor: '6/22',
+    hasElevator: true,
+    detailInfo: {
+      landType: '住宅用地',
+      buildingType: 'RC結構',
+      transactionType: '買賣',
+    },
+  },
+  {
+    id: 'TX-MOCK-005',
+    address: '新北市新店區中興路120號',
+    landCategory: '住宅',
+    houseType: '透天厝',
+    tradeCategory: '出售',
+    transactionDate: '2024-08-05',
+    totalPrice: 2200,
+    unitAreaPrice: '45.3',
+    area: '48.6',
+    floor: '3/4',
+    hasElevator: false,
+    detailInfo: {
+      landType: '住宅用地',
+      buildingType: 'RC結構',
+      transactionType: '買賣',
+    },
+  },
+  {
+    id: 'TX-MOCK-006',
+    address: '台北市中正區重慶南路一段90號',
+    landCategory: '商業',
+    houseType: '電梯大樓',
+    tradeCategory: '出售',
+    transactionDate: '2024-07-18',
+    totalPrice: 4200,
+    unitAreaPrice: '92.8',
+    area: '45.2',
+    floor: '10/30',
+    hasElevator: true,
+    detailInfo: {
+      landType: '商業用地',
+      buildingType: '鋼骨結構',
+      transactionType: '買賣',
+    },
+  },
+  {
+    id: 'TX-MOCK-007',
+    address: '桃園市桃園區市中路35號',
+    landCategory: '住宅',
+    houseType: '電梯大樓',
+    tradeCategory: '出售',
+    transactionDate: '2024-06-22',
+    totalPrice: 980,
+    unitAreaPrice: '28.5',
+    area: '34.4',
+    floor: '15/18',
+    hasElevator: true,
+    detailInfo: {
+      landType: '住宅用地',
+      buildingType: 'RC結構',
+      transactionType: '買賣',
+    },
+  },
+  {
+    id: 'TX-MOCK-008',
+    address: '台中市西屯區臺灣大道四段680號',
+    landCategory: '商業',
+    houseType: '新建層別屋',
+    tradeCategory: '出售',
+    transactionDate: '2024-05-30',
+    totalPrice: 2600,
+    unitAreaPrice: '62.3',
+    area: '41.7',
+    floor: '9/20',
+    hasElevator: true,
+    detailInfo: {
+      landType: '商業用地',
+      buildingType: 'RC結構',
+      transactionType: '買賣',
+    },
+  },
+];
+
+/**
+ * 模擬查詢延遲
+ */
+function mockDelay(ms = 800) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * 查詢實價登錄
+ * @param {Object} params - 查詢參數
+ * @param {string} params.county - 縣市
+ * @param {string} params.district - 行政區
+ * @param {string} [params.keyword] - 關鍵詞
+ * @param {string} [params.landCategory] - 類型
+ * @param {string} [params.tradeCategory] - 交易類型
+ * @param {string} [params.priceMin] - 最低價格
+ * @param {string} [params.priceMax] - 最高價格
+ * @returns {Promise<Array>} - 交易紀錄列表
+ */
 export async function searchLandPrice(params) {
-  return generateMockRecords(params.county, params.district, params.keyword)
+  try {
+    // 嘗試呼叫代理伺服器
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        city: params.county,
+        range: params.district,
+        query: params.keyword,
+        category: params.landCategory,
+      }),
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    
+    // 處理 API 回傳的欄位
+    if (data.ResultList?.Record) {
+      const records = Array.isArray(data.ResultList.Record)
+        ? data.ResultList.Record
+        : [data.ResultList.Record];
+      
+      return records.map(r => ({
+        id: r.TradeID,
+        address: r.Address,
+        landCategory: r.LandCategory || '待分類',
+        houseType: r.HouseCategory || '待分類',
+        tradeCategory: r.TradeCategory || '一般交易',
+        transactionDate: r.TradeDate,
+        totalPrice: parseFloat(r.Price?.replace(/,/g, '')) || 0,
+        unitAreaPrice: r.UnitPrice || '0',
+        area: r.TradeArea || '0',
+        floor: r.Floor || '待分類',
+        hasElevator: r.HasElevator === '有',
+      }));
+    }
+    
+    // 如果 API 回傳了其他格式，則回傳空列表
+    return [];
+  } catch (error) {
+    console.warn('代理伺服器不可用或連線失敗，回傳模擬資料', error);
+    
+    // 過濾模擬資料
+    return MOCK_DATA.filter(record => {
+      // 根據查詢條件過濾
+      if (params.county && !record.address.includes(params.county)) return false;
+      if (params.district && !record.address.includes(params.district)) return false;
+      
+      // 過濾類型
+      if (params.landCategory && params.landCategory !== '全部')
+        return record.landCategory === params.landCategory;
+      
+      return true;
+    });
+  }
 }
