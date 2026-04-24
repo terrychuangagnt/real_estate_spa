@@ -1,0 +1,339 @@
+#!/usr/bin/env node
+/**
+ * 實價登錄資料伺服器
+ * 讀取 /tmp/lvr_landtxt/ 中的 txt 檔案，提供 API 查詢服務
+ */
+
+import express from 'express';
+import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = '/tmp/lvr_landtxt';
+const PORT = 3002;
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// 縣市映射
+const CITY_MAP = {
+  'a': '台北市', 'b': '台中市', 'c': '基隆市', 'd': '台南市',
+  'e': '高雄市', 'f': '新北市', 'g': '宜蘭縣', 'h': '桃園市',
+  'i': '嘉義市', 'j': '新竹縣', 'k': '苗栗縣', 'm': '南投縣',
+  'n': '彰化縣', 'o': '新竹市', 'p': '雲林縣', 'q': '嘉義縣',
+  't': '屏東縣', 'u': '花蓮縣', 'v': '臺東縣', 'w': '金門縣',
+  'x': '澎湖縣'
+};
+
+// 工具函數：民國年日期格式化
+export function formatDate(dateStr) {
+  if (!dateStr || dateStr.trim() === '') return '';
+  const year = parseInt(dateStr.substring(0, 3)) + 1911;
+  const month = parseInt(dateStr.substring(3, 5));
+  const day = parseInt(dateStr.substring(5, 7));
+  return `${year}年${String(month).padStart(2, '0')}月${String(day).padStart(2, '0')}日`;
+}
+
+export function formatDateISO(dateStr) {
+  if (!dateStr || dateStr.trim() === '') return '';
+  const year = parseInt(dateStr.substring(0, 3)) + 1911;
+  const month = parseInt(dateStr.substring(3, 5));
+  const day = parseInt(dateStr.substring(5, 7));
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+// 工具函數：金額格式化
+export function formatPrice(price) {
+  if (price === null || price === undefined) return null;
+  return Number(price).toLocaleString();
+}
+
+// 工具函數：處理空欄位顯示
+export function formatNull(value, defaultValue = '-') {
+  if (value === null || value === undefined || value === '' || value === '-') return defaultValue;
+  return value;
+}
+
+// 讀取 txt 檔案並解析
+function readTxtFile(filename) {
+  const filepath = path.join(DATA_DIR, filename);
+  if (!fs.existsSync(filepath)) return [];
+
+  const content = fs.readFileSync(filepath, 'utf-8-sig');
+  const lines = content.split('\n');
+  const records = [];
+
+  // 跳過第 1-2 行（中文頭、英文頭）
+  for (let i = 2; i < lines.length; i++) {
+    const line = lines[i].replace(/\r$/, '');
+    if (!line.trim()) continue;
+
+    const fields = line.split(',');
+    if (fields.length < 34) continue;
+
+    const record = {
+      // 基本資料
+      district: formatNull(fields[0]),                // 鄉鎮市區
+      propertyType: formatNull(fields[1]),            // 交易標的
+      address: formatNull(fields[2]),                 // 土地位置/建物門牌
+      landArea: parseFloat(fields[3]),                // 土地移轉總面積
+      urbanZoning: formatNull(fields[4]),             // 都市土地使用分區
+      ruralZoning: formatNull(fields[5]),             // 非都市土地使用分區
+      ruralDesignation: formatNull(fields[6]),        // 非都市土地使用編定
+
+      // 交易資訊
+      tradeDate: formatDate(fields[7]),               // 交易日期
+      tradeDateISO: formatDateISO(fields[7]),
+      transactionType: formatNull(fields[8]),         // 交易筆棟數
+      transferLevel: formatNull(fields[9]),           // 移轉層次
+      totalFloors: parseInt(fields[10]) || 0,         // 總樓層數
+
+      // 建物資訊
+      buildingType: formatNull(fields[11]),           // 建物型態
+      buildingUse: formatNull(fields[12]),            // 主要用途
+      buildingMaterial: formatNull(fields[13]),       // 主要建材
+      builtYear: formatNull(fields[14]),              // 建築完成年月
+      buildingArea: parseFloat(fields[15]),           // 建物移轉面積
+      rooms: parseInt(fields[16]) || 0,               // 房
+      halls: parseInt(fields[17]) || 0,               // 廳
+      bathrooms: parseInt(fields[18]) || 0,           // 衛
+      interior: formatNull(fields[19]),               // 現況隔間
+      hasManagement: formatNull(fields[20]),          // 有無管理組織
+
+      // 價格資訊
+      totalPrice: parseFloat(fields[22]) || null,     // 總價
+      totalPriceDisplay: formatPrice(fields[22]),
+      unitPrice: parseFloat(fields[23]) || null,      // 單價（每平方公尺）
+      unitPriceDisplay: formatPrice(fields[23]),
+
+      // 車位資訊（含條件顯示）
+      parkingType: formatNull(fields[24], '-'),
+      parkingArea: parseFloat(fields[25]),
+      parkingPrice: parseFloat(fields[26]) || null,
+      parkingPriceDisplay: formatPrice(fields[26]),
+      parkingPriceDisplay: formatPrice(fields[26]),
+
+      // 其他
+      remarks: formatNull(fields[27]),
+      recordId: formatNull(fields[28]),
+      mainBuildingArea: parseFloat(fields[29]),
+      ancillaryArea: parseFloat(fields[30]),
+      balconyArea: parseFloat(fields[31]),
+      hasElevator: formatNull(fields[32]),
+      transactionNumber: formatNull(fields[33]),
+
+      // 來源資訊
+      sourceFile: filename,
+    };
+
+    // 判斷是否含車位
+    record.hasParking = fields[24] && fields[24].trim() !== '' && fields[24].trim() !== '-';
+
+    records.push(record);
+  }
+
+  return records;
+}
+
+function parseFloat(str) {
+  if (!str || str.trim() === '' || str.trim() === '-') return null;
+  return parseFloat(str);
+}
+
+// 載入所有資料
+async function loadAllData() {
+  console.log('正在載入資料檔案...');
+  const allData = {};
+  let totalFiles = 0;
+  let totalRecords = 0;
+
+  for (const [cityCode, cityName] of Object.entries(CITY_MAP)) {
+    const records = [];
+
+    for (const fileType of ['a', 'b', 'c']) {
+      const patterns = [
+        `${cityCode}_lvr_land_${fileType}.txt`,
+        `${cityCode}_lvr_land_${fileType}_land.txt`,
+        `${cityCode}_lvr_land_${fileType}_build.txt`,
+        `${cityCode}_lvr_land_${fileType}_park.txt`
+      ];
+
+      for (const filename of patterns) {
+        const filepath = path.join(DATA_DIR, filename);
+        if (!fs.existsSync(filepath)) continue;
+
+        const fileRecords = readTxtFile(filename);
+        if (fileRecords.length > 0) {
+          totalFiles++;
+          totalRecords += fileRecords.length;
+          records.push(...fileRecords);
+        }
+      }
+    }
+
+    if (records.length > 0) {
+      allData[cityCode] = records;
+    }
+  }
+
+  console.log(`載入完成：共 ${totalRecords} 筆資料，來自 ${totalFiles} 個檔案，涵蓋 ${Object.keys(allData).length} 個縣市`);
+  return allData;
+}
+
+// 記憶體快取
+let allDataCache = null;
+
+// API 端點：取得縣市列表
+app.get('/api/data/cities', async (req, res) => {
+  if (!allDataCache) return res.status(503).json({ error: '資料尚未載入' });
+
+  const cities = Object.entries(CITY_MAP)
+    .map(([code, name]) => ({
+      code,
+      name,
+      count: allDataCache[code]?.length || 0
+    }))
+    .filter(c => c.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  res.json(cities);
+});
+
+// API 端點：取得特定縣市的行政區
+app.get('/api/data/distinct', async (req, res) => {
+  if (!allDataCache) return res.status(503).json({ error: '資料尚未載入' });
+
+  const city = req.query.city;
+  if (!city) return res.json({ districts: [] });
+
+  const cityCode = Object.entries(CITY_MAP).find(([_, name]) => name === city)?.[0];
+  if (!cityCode || !allDataCache[cityCode]) return res.json({ districts: [] });
+
+  // 取得所有不重複的行政區
+  const districts = new Set();
+  for (const record of allDataCache[cityCode]) {
+    if (record.district && record.district !== '-') {
+      districts.add(record.district);
+    }
+  }
+
+  res.json({
+    districts: Array.from(districts).sort(),
+    count: Array.from(districts).length
+  });
+});
+
+// API 端點：搜尋資料
+app.get('/api/data/search', async (req, res) => {
+  if (!allDataCache) return res.status(503).json({ error: '資料尚未載入' });
+
+  const {
+    city,
+    district,
+    propertyType,
+    minPrice,
+    maxPrice,
+    minPriceUnit,
+    maxPriceUnit,
+    minArea,
+    maxArea,
+    minRooms,
+    maxHalls,
+    minBathrooms,
+    hasElevator,
+    page = 1,
+    pageSize = 2,
+    sortBy = 'tradeDate',
+    sortOrder = 'desc'
+  } = req.query;
+
+  const filtered = [];
+
+  // 遍歷所有符合條件的縣市資料
+  for (const [code, records] of Object.entries(allDataCache)) {
+    // 縣市篩選
+    if (city && CITY_MAP[code] !== city) continue;
+
+    for (const record of records) {
+      // 行政區篩選
+      if (district && record.district !== district) continue;
+
+      // 交易標的篩選（買賣/預售屋/租賃）
+      if (propertyType) {
+        if (propertyType === '買賣' && !record.propertyType.includes('土地') && !record.propertyType.includes('房地')) continue;
+        if (propertyType === '預售屋' && !record.propertyType.includes('預售屋')) continue;
+        if (propertyType === '租賃' && !record.propertyType.includes('租賃')) continue;
+      }
+
+      // 總價篩選
+      if (minPrice && record.totalPrice !== null && record.totalPrice < parseFloat(minPrice)) continue;
+      if (maxPrice && record.totalPrice !== null && record.totalPrice > parseFloat(maxPrice)) continue;
+
+      // 單價篩選
+      if (minPriceUnit && record.unitPrice !== null && record.unitPrice < parseFloat(minPriceUnit)) continue;
+      if (maxPriceUnit && record.unitPrice !== null && record.unitPrice > parseFloat(maxPriceUnit)) continue;
+
+      // 面積篩選
+      if (minArea && record.landArea !== null && record.landArea < parseFloat(minArea)) continue;
+      if (maxArea && record.landArea !== null && record.landArea > parseFloat(maxArea)) continue;
+      if (minArea && record.buildingArea !== null && record.buildingArea < parseFloat(minArea)) continue;
+      if (maxArea && record.buildingArea !== null && record.buildingArea > parseFloat(maxArea)) continue;
+
+      // 房間數篩選
+      if (minRooms && record.rooms !== null && record.rooms < parseInt(minRooms)) continue;
+      if (maxRooms && record.halls !== null && record.halls < parseInt(minHalls)) continue;
+
+      // 衛浴數篩選
+      if (minBathrooms && record.bathrooms !== null && record.bathrooms < parseInt(minBathrooms)) continue;
+
+      // 有沒有管理組織
+      if (hasElevator === '有' && record.hasManagement !== '有') continue;
+      if (hasElevator === '無' && record.hasManagement !== '無') continue;
+
+      filtered.push(record);
+    }
+  }
+
+  // 排序
+  const sortFields = {
+    'tradeDate': (r) => parseInt(r.tradeDateISO),
+    'totalPrice': (r) => r.totalPrice || 0,
+    'unitPrice': (r) => r.unitPrice || 0,
+    'landArea': (r) => r.landArea || 0,
+    'buildingArea': (r) => r.buildingArea || 0
+  };
+
+  if (sortFields[sortBy]) {
+    filtered.sort((a, b) => {
+      const va = sortFields[sortBy](a);
+      const vb = sortFields[sortBy](b);
+      return sortOrder === 'desc' ? vb - va : va - vb;
+    });
+  }
+
+  // 分頁
+  const pageNum = parseInt(page);
+  const pageSizeNum = parseInt(pageSize);
+  const start = (pageNum - 1) * pageSizeNum;
+  const end = start + pageSizeNum;
+  const paginated = filtered.slice(start, end);
+
+  res.json({
+    data: paginated,
+    total: filtered.length,
+    page: pageNum,
+    pageSize: pageSizeNum,
+    totalPages: Math.ceil(filtered.length / pageSizeNum)
+  });
+});
+
+// 啟動
+loadAllData().then((data) => {
+  allDataCache = data;
+  app.listen(PORT, () => {
+    console.log(`實價登錄資料伺服器已啟動: http://localhost:${PORT}`);
+  });
+});

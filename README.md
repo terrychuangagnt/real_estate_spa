@@ -1,5 +1,22 @@
-# Vue 3 + Vite
+# 實價登錄 SPA
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+基於 Vue 3 + Vite + Element Plus 的實價登錄查詢工具。
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## 特點
+
+- 查詢台灣各地區實價登錄資料
+- Element Plus UI 元件庫
+- 模擬資料開發，方便測試
+
+## 開發
+
+```bash
+npm install
+npm run dev
+```
+
+## 建置
+
+```bash
+npm run build
+```

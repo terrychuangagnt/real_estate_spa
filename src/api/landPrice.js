@@ -1,235 +1,134 @@
 /**
- * 實價查詢 API
- * 
- * 使用方式：
- * 1. 開發模式：預設使用模擬資料
- * 2. 正式部署：部署 proxyServer.js 或使用 Cloudflare Workers
- * 3. 設定 VITE_API_URL 環境變數來設定代理伺服器 URL
+ * 實價登錄資料服務
+ * 使用本地的 lvr_landtxt.txt 資料作為實價查詢來源
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/real-estate/search';
+const API_BASE = (typeof process !== 'undefined' && process.env.VITE_API_URL) 
+  ? process.env.VITE_API_URL 
+  : (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) 
+    ? import.meta.env.VITE_API_URL 
+    : '/api';
 
-const MOCK_DATA = [
-  {
-    id: 'TX-MOCK-001',
-    address: '新北市板橋區縣民大道一段100號',
-    landCategory: '住宅',
-    houseType: '電梯大樓',
-    tradeCategory: '出售',
-    transactionDate: '2024-12-15',
-    totalPrice: 2800,
-    unitAreaPrice: '78.5',
-    area: '35.6',
-    floor: '12/25',
-    hasElevator: true,
-    detailInfo: {
-      landType: '住宅用地',
-      buildingType: 'RC結構',
-      transactionType: '買賣',
-    },
-  },
-  {
-    id: 'TX-MOCK-002',
-    address: '新北市板橋區府中路200號',
-    landCategory: '商業',
-    houseType: '電梯大樓',
-    tradeCategory: '出售',
-    transactionDate: '2024-11-28',
-    totalPrice: 3500,
-    unitAreaPrice: '85.2',
-    area: '42.3',
-    floor: '8/18',
-    hasElevator: true,
-    detailInfo: {
-      landType: '商業用地',
-      buildingType: '鋼骨結構',
-      transactionType: '買賣',
-    },
-  },
-  {
-    id: 'TX-MOCK-003',
-    address: '台北市信義區信義路三段55號',
-    landCategory: '住宅',
-    houseType: '無電梯公寓',
-    tradeCategory: '出售',
-    transactionDate: '2024-10-10',
-    totalPrice: 1500,
-    unitAreaPrice: '52.1',
-    area: '28.8',
-    floor: '3/5',
-    hasElevator: false,
-    detailInfo: {
-      landType: '住宅用地',
-      buildingType: 'RC結構',
-      transactionType: '買賣',
-    },
-  },
-  {
-    id: 'TX-MOCK-004',
-    address: '桃園市桃園區縣民大道88號',
-    landCategory: '住宅',
-    houseType: '新建層別屋',
-    tradeCategory: '出售',
-    transactionDate: '2024-09-20',
-    totalPrice: 1800,
-    unitAreaPrice: '38.6',
-    area: '46.5',
-    floor: '6/22',
-    hasElevator: true,
-    detailInfo: {
-      landType: '住宅用地',
-      buildingType: 'RC結構',
-      transactionType: '買賣',
-    },
-  },
-  {
-    id: 'TX-MOCK-005',
-    address: '新北市新店區中興路120號',
-    landCategory: '住宅',
-    houseType: '透天厝',
-    tradeCategory: '出售',
-    transactionDate: '2024-08-05',
-    totalPrice: 2200,
-    unitAreaPrice: '45.3',
-    area: '48.6',
-    floor: '3/4',
-    hasElevator: false,
-    detailInfo: {
-      landType: '住宅用地',
-      buildingType: 'RC結構',
-      transactionType: '買賣',
-    },
-  },
-  {
-    id: 'TX-MOCK-006',
-    address: '台北市中正區重慶南路一段90號',
-    landCategory: '商業',
-    houseType: '電梯大樓',
-    tradeCategory: '出售',
-    transactionDate: '2024-07-18',
-    totalPrice: 4200,
-    unitAreaPrice: '92.8',
-    area: '45.2',
-    floor: '10/30',
-    hasElevator: true,
-    detailInfo: {
-      landType: '商業用地',
-      buildingType: '鋼骨結構',
-      transactionType: '買賣',
-    },
-  },
-  {
-    id: 'TX-MOCK-007',
-    address: '桃園市桃園區市中路35號',
-    landCategory: '住宅',
-    houseType: '電梯大樓',
-    tradeCategory: '出售',
-    transactionDate: '2024-06-22',
-    totalPrice: 980,
-    unitAreaPrice: '28.5',
-    area: '34.4',
-    floor: '15/18',
-    hasElevator: true,
-    detailInfo: {
-      landType: '住宅用地',
-      buildingType: 'RC結構',
-      transactionType: '買賣',
-    },
-  },
-  {
-    id: 'TX-MOCK-008',
-    address: '台中市西屯區臺灣大道四段680號',
-    landCategory: '商業',
-    houseType: '新建層別屋',
-    tradeCategory: '出售',
-    transactionDate: '2024-05-30',
-    totalPrice: 2600,
-    unitAreaPrice: '62.3',
-    area: '41.7',
-    floor: '9/20',
-    hasElevator: true,
-    detailInfo: {
-      landType: '商業用地',
-      buildingType: 'RC結構',
-      transactionType: '買賣',
-    },
-  },
-];
+// 轉換伺服器回傳的資料格式到前端使用的格式
+function transformRecord(record) {
+  return {
+    // 基本資料
+    district: record.district,
+    propertyType: record.propertyType,
+    address: record.address,
+    landArea: record.landArea,
+    urbanZoning: record.urbanZoning,
+    ruralZoning: record.ruralZoning,
+    ruralDesignation: record.ruralDesignation,
 
-/**
- * 模擬查詢延遲
- */
-function mockDelay(ms = 800) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+    // 交易資訊（格式化後）
+    tradeDate: record.tradeDate,
+    transactionType: record.transactionType,
+    totalFloors: record.totalFloors,
+
+    // 建物資訊
+    buildingType: record.buildingType,
+    buildingUse: record.buildingUse,
+    buildingMaterial: record.buildingMaterial,
+    builtYear: record.builtYear,
+    buildingArea: record.buildingArea,
+    rooms: record.rooms,
+    halls: record.halls,
+    bathrooms: record.bathrooms,
+    interior: record.interior,
+    hasManagement: record.hasManagement,
+
+    // 價格資訊（格式化後）
+    totalPrice: record.totalPrice,
+    totalPriceDisplay: record.totalPriceDisplay,
+    unitPrice: record.unitPrice,
+    unitPriceDisplay: record.unitPriceDisplay,
+
+    // 車位資訊（有車位才顯示）
+    parkingType: record.parkingType,
+    parkingArea: record.parkingArea,
+    parkingPrice: record.parkingPrice,
+    parkingPriceDisplay: record.parkingPriceDisplay,
+    hasParking: record.hasParking,
+
+    // 來源資訊
+    city: record.city,
+    sourceFile: record.sourceFile,
+
+    // 其他
+    recordId: record.recordId,
+    mainBuildingArea: record.mainBuildingArea,
+    ancillaryArea: record.ancillaryArea,
+    balconyArea: record.balconyArea,
+    hasElevator: record.hasElevator,
+    transactionNumber: record.transactionNumber,
+  };
 }
 
-/**
- * 查詢實價登錄
- * @param {Object} params - 查詢參數
- * @param {string} params.county - 縣市
- * @param {string} params.district - 行政區
- * @param {string} [params.keyword] - 關鍵詞
- * @param {string} [params.landCategory] - 類型
- * @param {string} [params.tradeCategory] - 交易類型
- * @param {string} [params.priceMin] - 最低價格
- * @param {string} [params.priceMax] - 最高價格
- * @returns {Promise<Array>} - 交易紀錄列表
- */
 export async function searchLandPrice(params) {
   try {
-    // 嘗試呼叫代理伺服器
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        city: params.county,
-        range: params.district,
-        query: params.keyword,
-        category: params.landCategory,
-      }),
+    const queryString = new URLSearchParams({
+      city: params.county || '',
+      district: params.district || '',
+      propertyType: params.type || '',
+      minPrice: params.minPrice || '',
+      maxPrice: params.maxPrice || '',
+      minPriceUnit: params.unitPriceMin || '',
+      maxPriceUnit: params.unitPriceMax || '',
+      minArea: params.minArea || '',
+      maxArea: params.maxArea || '',
+      minRooms: params.minRooms || '',
+      maxRooms: params.maxRooms || '',
+      minHalls: params.minHalls || '',
+      maxHalls: params.maxHalls || '',
+      minBathrooms: params.minBathrooms || '',
+      maxBathrooms: params.maxBathrooms || '',
+      hasElevator: params.hasElevator || '',
+      page: params.page || 1,
+      pageSize: params.pageSize || 2,
+      sortBy: params.sortBy || 'tradeDate',
+      sortOrder: params.sortOrder || 'desc',
     });
 
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    
-    const data = await response.json();
-    
-    // 處理 API 回傳的欄位
-    if (data.ResultList?.Record) {
-      const records = Array.isArray(data.ResultList.Record)
-        ? data.ResultList.Record
-        : [data.ResultList.Record];
-      
-      return records.map(r => ({
-        id: r.TradeID,
-        address: r.Address,
-        landCategory: r.LandCategory || '待分類',
-        houseType: r.HouseCategory || '待分類',
-        tradeCategory: r.TradeCategory || '一般交易',
-        transactionDate: r.TradeDate,
-        totalPrice: parseFloat(r.Price?.replace(/,/g, '')) || 0,
-        unitAreaPrice: r.UnitPrice || '0',
-        area: r.TradeArea || '0',
-        floor: r.Floor || '待分類',
-        hasElevator: r.HasElevator === '有',
-      }));
-    }
-    
-    // 如果 API 回傳了其他格式，則回傳空列表
+    const res = await fetch(`${API_BASE}/data/search?${queryString}`);
+    if (!res.ok) throw new Error(`API 錯誤 ${res.status}`);
+
+    const data = await res.json();
+    return {
+      data: (data.data || []).map(transformRecord),
+      total: data.total || 0,
+      page: data.page || 1,
+      pageSize: data.pageSize || 2,
+      totalPages: data.totalPages || 0,
+    };
+  } catch (err) {
+    console.warn('查詢失敗:', err.message);
+    return { data: [], total: 0, page: 1, pageSize: 2, totalPages: 0 };
+  }
+}
+
+export async function getDistricts(city) {
+  if (!city) return [];
+
+  try {
+    const res = await fetch(`${API_BASE}/data/distinct?city=${encodeURIComponent(city)}`);
+    if (!res.ok) throw new Error(`Districts API 錯誤 ${res.status}`);
+    const data = await res.json();
+    return data.districts || [];
+  } catch (err) {
+    console.warn('取得行政區失敗:', err.message);
     return [];
-  } catch (error) {
-    console.warn('代理伺服器不可用或連線失敗，回傳模擬資料', error);
-    
-    // 過濾模擬資料
-    return MOCK_DATA.filter(record => {
-      // 根據查詢條件過濾
-      if (params.county && !record.address.includes(params.county)) return false;
-      if (params.district && !record.address.includes(params.district)) return false;
-      
-      // 過濾類型
-      if (params.landCategory && params.landCategory !== '全部')
-        return record.landCategory === params.landCategory;
-      
-      return true;
-    });
+  }
+}
+
+export async function getCities() {
+  try {
+    const res = await fetch(`${API_BASE}/data/cities`);
+    if (!res.ok) throw new Error(`Cities API 錯誤 ${res.status}`);
+    const data = await res.json();
+    return data || [];
+  } catch (err) {
+    console.warn('取得縣市失敗:', err.message);
+    return [];
   }
 }
