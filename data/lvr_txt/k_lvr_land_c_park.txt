@@ -1,0 +1,9 @@
+﻿編號,車位類別,車位價格,車位面積平方公尺,車位所在樓層
+Serial number,berth category,berth price,berth area square meter,
+RPTNMLOJLHLGFDK98CC,一樓平面,0,,一樓
+RPQNMLQLLHLGFDK09CC,坡道平面,0,29.26,地下二樓
+RPPNMLQLLHLGFDK98CC,坡道平面,0,28.05,地下三樓
+RPRNMLQLLHLGFDK56CC,坡道平面,0,29.26,地下二樓
+RPPNMLNKLHLGFDK58CC,坡道平面,0,31.45,地下四樓
+RPPNMLRLLHLGFFK66CC,坡道平面,0,,地下一樓
+RPSNMLLJMHLGFFK88CC,坡道平面,0,26.87,地下一樓

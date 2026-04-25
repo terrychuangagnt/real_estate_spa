@@ -1,0 +1,23 @@
+﻿編號,土地位置,土地移轉面積平方公尺,使用分區或編定,權利人持分分母,權利人持分分子,移轉情形,地號
+The serial number, land position,land shifting area square meter,the use zoning or compiles and checks,,,,land parcel
+RPQNMLKKKHLGFAW09DA,東店段,57.71,都市：其他:自然村專用區,100000,4837,持分移轉,03310000
+RPRNMLNLLHLGFAW07DA,塔后段,169.00,都市：其他:自然村專用區,1,1,全筆移轉,11230006
+RPQNMLQJLHLGFAW07DA,小西門劃測段,19.47,都市：其他:自然村專用區,1,1,全筆移轉,22320001
+RPPNMLKMLHLGFAW66DA,長寮段,50.33,都市：其他:自然村專用區,100,9,持分移轉,06240000
+RPPNMLRJMHLGFAW27EA,湖尾段,2.33,都市：其他:自然村專用區,1,1,全筆移轉,08350003
+RPQOMLMJKHLGFAW66DA,寧湖二劃測段,50.00,都市：其他:自然村專用區,20,1,持分移轉,12170000
+RPPNMLRJMHLGFAW27EA,湖尾段,.84,都市：其他:自然村專用區,1,1,全筆移轉,08350004
+RPPNMLSJMHLGFAW27DA,瓊林段,1215.47,都市：其他:第二類一般管制區,1,1,全筆移轉,05150001
+RPRNMLLJMHLGFAW76DA,長寮段,108.69,都市：其他:道路用地,1,1,全筆移轉,00900003
+RPTNMLOLLHLGFAW37DA,北九十劃段,490.93,都市：其他:農業區,2,1,持分移轉,01160000
+RPPNMLLMLHLGFAW86EA,寧劃段,500.00,都市：其他:農業區,1,1,全筆移轉,02670000
+RPPNMLLMLHLGFAW86EA,寧劃段,500.00,都市：其他:農業區,1,1,全筆移轉,02700000
+RPPNMLLMLHLGFAW86EA,寧劃段,67.00,都市：其他:農業區,1,1,全筆移轉,03000000
+RPSNMLLJMHLGFAW86DA,九宮測段,191.66,,1,1,全筆移轉,02180001
+RPSNMLLJMHLGFAW86DA,九宮測段,31.04,,1,1,全筆移轉,02180002
+RPSNMLLJMHLGFAW86DA,榮湖段,123.47,都市：其他:公園用地,1,1,全筆移轉,09780001
+RPPNMLRLLHLGFAW27DA,寧湖二劃測段,34.89,都市：其他:農業區,10000,576,持分移轉,07370000
+RPPNMLRLLHLGFAW27DA,寧湖二劃測段,1.66,都市：其他:自然村專用區,10000,576,持分移轉,07370001
+RPPNMLNLLHLGFAW86DA,安西劃段,418.51,都市：其他:保護區,1,1,全筆移轉,05320000
+RPPNMLSJMHLGFAW37EA,庵邊測段,311.04,都市：其他:自然村專用區,1,1,全筆移轉,03370000
+RPTNMLKLJHLGFAW76DA,上后垵測段,37.19,都市：其他:自然村專用區,6,1,持分移轉,00590000

@@ -1,0 +1,58 @@
+﻿編號,屋齡,建物移轉面積平方公尺,主要用途,主要建材,建築完成日期,總層數,建物分層,移轉情形
+The serial number,room age,building shifting area square meter,the main use,main building materials,construction completes the date,total layer,building lamination,
+RPTNMLPKJHLGFAV07DA,40,95.90,住家用,加強磚造,75年1月6日,二層,一層 二層 陽台,全筆移轉
+RPRNMLKMLHLGFAV76DA,32,11.13,避難室,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPQNMLNLLHLGFAV86DA,33,138.15,住家用,鋼筋混凝土造,82年3月8日,三層,一層 二層 三層,全筆移轉
+RPQNMLKKLHLGFAV09DA,44,6.63,樓梯,加強磚造,71年2月4日,四層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,1.13,樓梯間走道,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPQNMLKKLHLGFAV09DA,44,8.30,避難室,加強磚造,71年2月4日,四層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.75,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPQNMLKKLHLGFAV09DA,44,74.15,住家用,加強磚造,71年2月4日,四層,三層,全筆移轉
+RPRNMLKMLHLGFAV76DA,32,.14,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.53,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.56,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.14,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.37,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.30,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.37,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.30,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.30,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.37,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.37,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.30,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.30,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.37,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.37,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.30,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.37,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.30,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.30,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.37,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.30,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.37,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.30,樓梯間,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.37,空白,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.27,空白,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.27,空白,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.28,空白,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.34,空白,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,.30,空白,鋼筋混凝土造,83年5月16日,十三層,,持分移轉
+RPRNMLKMLHLGFAV76DA,32,92.57,集合住宅,鋼筋混凝土造,83年5月16日,十三層,十二層 陽台,全筆移轉
+RPSNMLKMJHLGFAV66DA,31,197.04,停車空間．住宅,鋼筋混凝土造,84年1月28日,五層,一層 二層 三層 四層 五層 陽台,全筆移轉
+RPPNMLLMLHLGFCV86DA,55,153.89,住家用,磚石造蓋鐵皮,60年9月6日,一層,一層,全筆移轉
+RPPNMLTKLHLGFDV57DA,31,70.00,住家用,加強磚造,84年3月22日,一層,一層,全筆移轉
+RPPNMLPLLHLGFAV96DA,10,367.96,住家用,ＲＣ造,105年6月27日,四層,一層 二層 三層 四層 見其他登記事項,全筆移轉
+RPPNMLKMLHLGFAV66EA,45,138.07,住家用,加強磚造,69年10月14日,二層,一層 二層 騎樓,全筆移轉
+RPPNMLNLLHLGFAV76DA,,68.43,Ｈ２集合住宅,鋼筋混凝土造,114年8月27日,五層,三層 見其他登記事項,全筆移轉
+RPPNMLNLLHLGFAV76DA,,34.59,樓梯間、停車空間,鋼筋混凝土造,114年8月27日,五層,,持分移轉
+RPPNMLRLLHLGFAV27EA,39,109.80,住家用,加強磚造,76年1月21日,二層,一層 二層 陽台 屋頂突出物,全筆移轉
+RPUNMLKMLHLGFAV07DA,30,8.85,主要內容：樓梯．電梯（共同使用）,鋼筋混凝土造,85年6月21日,七層,,持分移轉
+RPSNMLSJMHLGFAV47DA,,65.97,Ｈ２集合住宅,鋼筋混凝土造,114年8月27日,五層,四層 見其他登記事項,全筆移轉
+RPQNMLLJMHLGFAV56DA,47,88.64,住家用,加強磚造,67年11月9日,二層,一層 二層,全筆移轉
+RPUNMLKMLHLGFAV07DA,30,5.87,電梯．水箱．機械房．樓梯共同使用,鋼筋混凝土造,85年6月21日,七層,,持分移轉
+RPSNMLSJMHLGFAV47DA,,33.35,樓梯間、停車空間,鋼筋混凝土造,114年8月27日,五層,,持分移轉
+RPUNMLKMLHLGFAV07DA,30,6.29,車道．樓梯．配電室．機械房．蓄水池．機車停車位共同使用,鋼筋混凝土造,85年6月21日,七層,,持分移轉
+RPUNMLKMLHLGFAV07DA,30,16.82,防空避難室暨停車空間共同使用,鋼筋混凝土造,85年6月21日,七層,,持分移轉
+RPUNMLKMLHLGFAV07DA,30,89.46,集合住宅,鋼筋混凝土造,85年6月21日,七層,五層 陽台,全筆移轉
+RPQNMLMJMHLGFAV66DA,19,156.14,人行道、店舖、住宅、樓梯間,鋼筋混凝土造,95年9月27日,三層,一層 二層 三層 騎樓 見其他登記事項,全筆移轉
+RPPNMLMJMHLGFAV56DA,37,140.21,住家用,加強磚造,78年9月6日,二層,一層 二層 屋頂突出物,全筆移轉

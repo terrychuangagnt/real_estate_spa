@@ -1,0 +1,14 @@
+﻿編號,土地位置,土地移轉面積平方公尺,使用分區或編定,權利人持分分母,權利人持分分子,移轉情形,地號
+The serial number, land position,land shifting area square meter,the use zoning or compiles and checks,,,,land parcel
+RPWNMLOJLHLGFIF66CC,文林段,28.17,都市：住,,,,09690000
+RPPPMLQJLHLGFBF28CC,力行段,22.47,都市：商,,,,02590001
+RPSNMLSJLHLGFBF58CC,建林段,22.60,都市：住,,,,03630000
+RPXNMLTJLHLGFIF27CC,大學段一小段,30.00,都市：住,,,,01740001
+RPUNMLKKLHLGFBF08CC,力行段,6.57,都市：商,,,,08330000
+RPOOMLKKLHLGFIF28CC,安溪段,36.48,都市：住,,,,10130000
+RPWNMLLKLHLGFIF09CC,和平段,15.35,都市：住,,,,04380000
+RPQNMLNKLHLGFDF28DC,新峰段,29.50,都市：住,,,,07550000
+RPWOMLQKLHLGFBF98CC,力行段,168.79,都市：住,,,,03710000
+RPPNMLTKLHLGFBF58DC,力行段,17.79,都市：住,,,,00330000
+RPOOMLPLLHLGFBF18CC,國宅段,61.75,都市：住,,,,01000000
+RPSPMLRLLHLGFBF88CC,力行段,19.72,都市：住,,,,11960000

@@ -14,8 +14,8 @@ from flask import Flask, jsonify, request, Response
 
 app = Flask(__name__)
 
-# Data directory - all 202 txt files
-DATA_DIR = "/tmp/lvr_landtxt"
+# Data directory - all 202 txt files (use project-relative path, NOT /tmp)
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'lvr_txt')
 
 # File naming pattern: {city_code}_lvr_land_{type}.txt
 # city_code: a=台北, b=台中, c=基隆, ...

@@ -1,0 +1,15 @@
+﻿編號,土地位置,土地移轉面積平方公尺,使用分區或編定,權利人持分分母,權利人持分分子,移轉情形,地號
+The serial number, land position,land shifting area square meter,the use zoning or compiles and checks,,,,land parcel
+RPPNMLSKLHLGFCQ86CB,民工段,38.17,都市：住,10000,64,持分移轉,00020000
+RPQNMLRJLHLGFBQ66CB,德安段,31.99,都市：住,10000,777,持分移轉,11790013
+RPPNMLSKLHLGFCQ86CB,大崎腳段大崎腳小段,.46,都市：住,10000,64,持分移轉,00550002
+RPPNMLLKLHLGFBQ68CB,德安段,34.50,都市：住,10000,838,持分移轉,11790013
+RPRNMLKKLHLGFCQ88CB,松山段,101.03,非都市：一般農業區 ; 非都市編定：丙種建築用地,1,1,全筆移轉,01280002
+RPRNMLKKLHLGFCQ88CB,松山段,28.11,非都市：一般農業區 ; 非都市編定：丙種建築用地,10,1,持分移轉,01280000
+RPQNMLKKLHLGFCQ78CB,松山段,101.25,非都市：一般農業區 ; 非都市編定：丙種建築用地,1,1,全筆移轉,01280005
+RPQNMLKKLHLGFCQ78CB,松山段,28.11,非都市：一般農業區 ; 非都市編定：丙種建築用地,10,1,持分移轉,01280000
+RPPNMLTKLHLGFDQ07CB,過溝段過溝小段,89.00,都市：住,1,1,全筆移轉,11010016
+RPPNMLTKLHLGFDQ07CB,過溝段過溝小段,28.00,都市：住,301,28,持分移轉,11010011
+RPPNMLRJMHLGFDQ86CB,鹿北段,91.80,都市：住,1,1,全筆移轉,08460002
+RPPNMLRJMHLGFDQ86CB,鹿北段,24.58,都市：住,21,1,持分移轉,08460012
+RPPNMLRJMHLGFDQ86CB,鹿北段,.45,都市：住,29,1,持分移轉,08460013

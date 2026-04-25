@@ -1,0 +1,11 @@
+﻿編號,車位類別,車位價格,車位面積平方公尺,車位所在樓層
+Serial number,berth category,berth price,berth area square meter,
+RPRNMLTJLHLGFDQ27CC,坡道平面,0,16.82,地下二樓
+RPRNMLOLLHLGFDQ96CC,坡道平面,0,29.87,地下一樓
+RPPNMLNLLHLGFDQ66CC,坡道平面,0,16.82,地下一樓
+RPPNMLQKLHLGFDQ86CC,坡道平面,0,16.82,地下一樓
+RPPNMLLKLHLGFDQ98CC,坡道平面,0,29.87,地下二樓
+RPSNMLQJLHLGFDQ07CC,坡道平面,0,16.82,地下一樓
+RPRNMLQLLHLGFDQ17CC,坡道平面,0,16.82,地下二樓
+RPQNMLQLLHLGFDQ07CC,坡道平面,0,16.82,地下二樓
+RPPNMLQLLHLGFDQ96CC,坡道平面,0,16.82,地下一樓

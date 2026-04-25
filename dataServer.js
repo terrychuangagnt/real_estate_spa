@@ -1,13 +1,19 @@
 #!/usr/bin/env node
 /**
  * 實價登錄資料 API 伺服器 (SQLite 版)
- * 讀取 /tmp/lvr_landdata.db，提供 REST API。
+ * 讀取本地 SQLite 資料庫 lvr_records 表 (34 columns)
  */
 
 import sqlite3 from 'sqlite3';
 import { createServer } from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const DB_PATH = '/tmp/lvr_landdata.db';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Database path
+const DB_PATH = '/opt/data/home/real_estate_spa/data/realdb/lvr_data.db';
 
 // ========== DB Helpers ==========
 
@@ -44,61 +50,89 @@ function dbGet(db, sql, params = []) {
 function formatRow(row) {
   return {
     id: row.id,
-    city: row.city,
+    city_code: row.city_code,
     district: row.district,
-    propertyType: row.transaction_type,
+    transaction_type: row.transaction_type,
     address: row.address,
-    landArea: row.land_area,
-    zoning: row.zoning,
-    tradeDate: row.transaction_date,
-    tradeDateISO: row.transaction_date_iso,
-    totalFloors: row.total_floors,
-    buildingType: row.building_type,
-    buildingUse: row.building_use,
-    buildingMaterial: row.building_material,
-    buildingArea: row.building_area,
-    rooms: row.rooms,
-    halls: row.halls,
-    bathrooms: row.bathrooms,
-    interior: row.interior,
-    hasManagement: row.has_management,
-    totalPrice: row.total_price,
-    totalPriceDisplay: row.total_price ? row.total_price.toLocaleString() : '-',
-    unitPrice: row.unit_price,
-    unitPriceDisplay: row.unit_price ? row.unit_price.toFixed(0).toLocaleString() : '-',
-    parkingType: row.parking_type,
-    parkingArea: row.parking_area,
-    parkingPrice: row.parking_price,
-    parkingPriceDisplay: row.parking_price ? row.parking_price.toLocaleString() : '-',
-    hasParking: row.parking_type && row.parking_type !== '無' ? true : false,
-    hasElevator: row.has_elevator ? '有' : '無',
-    sourceFile: row.source_file,
+    land_area_sqm: row.land_area_sqm,
+    urban_zone: row.urban_zone,
+    rural_zone: row.rural_zone,
+    rural_allocation: row.rural_allocation,
+    trade_date: row.trade_date,
+    trade_bundles: row.trade_bundles,
+    transfer_level: row.transfer_level,
+    total_floors: row.total_floors,
+    building_type: row.building_type,
+    main_use: row.main_use,
+    main_material: row.main_material,
+    completion_date: row.completion_date,
+    building_area_sqm: row.building_area_sqm,
+    room_count: row.room_count,
+    living_count: row.living_count,
+    bath_count: row.bath_count,
+    partition_info: row.partition_info,
+    management_org: row.management_org,
+    total_price: row.total_price,
+    unit_price_sqm: row.unit_price_sqm,
+    parking_type: row.parking_type,
+    parking_area_sqm: row.parking_area_sqm,
+    parking_price: row.parking_price,
+    notes: row.notes,
+    id_no: row.id_no,
+    project_name: row.project_name,
+    building_num: row.building_num,
+    termination_info: row.termination_info,
+    source: row.source,
   };
-}
-
-function formatRows(rows) {
-  return rows.map(formatRow);
 }
 
 // ========== API Handlers ==========
 
-async function handleCities(db) {
-  const rows = await dbQuery(db, `
-    SELECT city, COUNT(*) as count
-    FROM lvr_records
-    GROUP BY city
-    ORDER BY count DESC
-  `);
-  return { cities: rows };
+async function handleAll(db) {
+  const rows = await dbQuery(db, 'SELECT * FROM lvr_records');
+  return { records: rows.map(formatRow), count: rows.length };
 }
 
-async function handleDistricts(db, city) {
+async function handleRecord(db, id) {
+  const row = await dbGet(db, 'SELECT * FROM lvr_records WHERE id = ?', [id]);
+  if (!row) return null;
+  return formatRow(row);
+}
+
+async function handleCities(db) {
+  const rows = await dbQuery(db, `
+    SELECT city_code, COUNT(*) as count
+    FROM lvr_records
+    GROUP BY city_code
+    ORDER BY count DESC
+  `);
+  // Return in frontend-compatible format
+  return rows.map(r => ({
+    name: getCityName(r.city_code),
+    code: r.city_code,
+    count: r.count
+  }));
+}
+
+function getCityName(code) {
+  const map = {
+    'a': '台北市', 'b': '台中市', 'c': '基隆市', 'd': '台南市',
+    'e': '高雄市', 'f': '新北市', 'g': '宜蘭縣', 'h': '桃園市',
+    'i': '嘉義市', 'j': '新竹縣', 'k': '苗栗縣', 'm': '南投縣',
+    'n': '彰化縣', 'o': '新竹市', 'p': '雲林縣', 'q': '嘉義縣',
+    't': '屏東縣', 'u': '花蓮縣', 'v': '台東縣', 'w': '金門縣',
+    'x': '澎湖縣'
+  };
+  return map[code] || code;
+}
+
+async function handleDistricts(db, cityCode) {
   const rows = await dbQuery(db, `
     SELECT DISTINCT district
     FROM lvr_records
-    WHERE city = ? AND district != ''
+    WHERE city_code = ? AND district != ''
     ORDER BY district
-  `, [city]);
+  `, [cityCode]);
   return {
     districts: rows.map(r => r.district),
     count: rows.length
@@ -107,91 +141,99 @@ async function handleDistricts(db, city) {
 
 async function handleSearch(db, params) {
   const {
-    city, district, propertyType,
-    minPrice, maxPrice, minPriceUnit, maxPriceUnit,
-    minArea, maxArea, minRooms, maxRooms,
-    minHalls, maxHalls, minBathrooms, maxBathrooms,
-    hasElevator, page = 1, pageSize = 2, sortBy = 'tradeDate', sortOrder = 'desc'
+    city_code,
+    district,
+    transaction_type,
+    transactionType,  // also accept camelCase variant
+    min_price,
+    max_price,
+    unit_price_min,
+    unit_price_max,
+    minArea,
+    maxArea,
+    minRooms,
+    maxRooms,
+    minBathrooms,
+    maxBathrooms,
+    hasElevator,
+    keyword,
+    page = 1,
+    page_size,
+    pageSize = 10,
+    sort_by = 'trade_date',
+    sortColParam = 'trade_date',
+    sortOrder = 'desc'
   } = params;
 
   const whereClauses = [];
   const queryParams = [];
 
-  // City filter
-  if (city && city !== '全台灣') {
-    whereClauses.push('city = ?');
-    queryParams.push(city);
+  if (city_code && city_code !== '') {
+    whereClauses.push('city_code = ?');
+    queryParams.push(city_code);
   }
 
-  // District
-  if (district && district !== '所有區') {
+  if (district && district !== '') {
     whereClauses.push('district = ?');
     queryParams.push(district);
   }
 
-  // Property type
-  if (propertyType && propertyType !== '所有類型') {
-    if (propertyType === '買賣') {
-      whereClauses.push("transaction_type = ? OR transaction_type LIKE ?", ['交易類型：買賣', '%預售%']);
-      queryParams.push('交易類型：買賣', '%預售%');
-    } else if (propertyType === '預售') {
-      whereClauses.push('transaction_type LIKE ?', ['%預售%']);
-    } else if (propertyType === '租賃') {
-      whereClauses.push('transaction_type = ?', ['交易類型：租賃']);
-    }
+  // Accept both transaction_type and transactionType
+  const txType = transaction_type || transactionType || '';
+  if (txType && txType !== '') {
+    whereClauses.push('transaction_type = ?');
+    queryParams.push(txType);
   }
 
-  // Price range
-  if (minPrice && minPrice !== '') { whereClauses.push('total_price >= ?'); queryParams.push(parseFloat(minPrice)); }
-  if (maxPrice && maxPrice !== '') { whereClauses.push('total_price <= ?'); queryParams.push(parseFloat(maxPrice)); }
-  if (minPriceUnit && minPriceUnit !== '') { whereClauses.push('unit_price >= ?'); queryParams.push(parseFloat(minPriceUnit)); }
-  if (maxPriceUnit && maxPriceUnit !== '') { whereClauses.push('unit_price <= ?'); queryParams.push(parseFloat(maxPriceUnit)); }
+  // Keyword search on address and city_code
+  if (keyword && keyword !== '') {
+    whereClauses.push('(address LIKE ? OR city_code = ?)');
+    queryParams.push('%' + keyword + '%', keyword);
+  }
 
-  // Area range
-  if (minArea && minArea !== '') { whereClauses.push('building_area >= ?'); queryParams.push(parseFloat(minArea)); }
-  if (maxArea && maxArea !== '') { whereClauses.push('building_area <= ?'); queryParams.push(parseFloat(maxArea)); }
+  // Price in NTD
+  if (min_price && min_price !== '') { whereClauses.push('total_price >= ?'); queryParams.push(parseFloat(min_price)); }
+  if (max_price && max_price !== '') { whereClauses.push('total_price <= ?'); queryParams.push(parseFloat(max_price)); }
+
+  // Unit price per sqm
+  const minUnit = unit_price_min || 0;
+  const maxUnit = unit_price_max || 0;
+  if (minUnit && parseFloat(minUnit) > 0) { whereClauses.push('unit_price_sqm >= ?'); queryParams.push(parseFloat(minUnit)); }
+  if (maxUnit && parseFloat(maxUnit) > 0) { whereClauses.push('unit_price_sqm <= ?'); queryParams.push(parseFloat(maxUnit)); }
+
+  // Area in sqm
+  if (minArea && minArea !== '') { whereClauses.push('building_area_sqm >= ?'); queryParams.push(parseFloat(minArea)); }
+  if (maxArea && maxArea !== '') { whereClauses.push('building_area_sqm <= ?'); queryParams.push(parseFloat(maxArea)); }
 
   // Rooms
-  if (minRooms && minRooms !== '') { whereClauses.push('rooms >= ?'); queryParams.push(parseInt(minRooms)); }
-  if (maxRooms && maxRooms !== '') { whereClauses.push('rooms <= ?'); queryParams.push(parseInt(maxRooms)); }
-
-  // Halls
-  if (minHalls && minHalls !== '') { whereClauses.push('halls >= ?'); queryParams.push(parseInt(minHalls)); }
-  if (maxHalls && maxHalls !== '') { whereClauses.push('halls <= ?'); queryParams.push(parseInt(maxHalls)); }
+  if (minRooms && minRooms !== '') { whereClauses.push('room_count >= ?'); queryParams.push(parseInt(minRooms)); }
+  if (maxRooms && maxRooms !== '') { whereClauses.push('room_count <= ?'); queryParams.push(parseInt(maxRooms)); }
 
   // Bathrooms
-  if (minBathrooms && minBathrooms !== '') { whereClauses.push('bathrooms >= ?'); queryParams.push(parseInt(minBathrooms)); }
-  if (maxBathrooms && maxBathrooms !== '') { whereClauses.push('bathrooms <= ?'); queryParams.push(parseInt(maxBathrooms)); }
+  if (minBathrooms && minBathrooms !== '') { whereClauses.push('bath_count >= ?'); queryParams.push(parseInt(minBathrooms)); }
+  if (maxBathrooms && maxBathrooms !== '') { whereClauses.push('bath_count <= ?'); queryParams.push(parseInt(maxBathrooms)); }
 
-  // Elevator
-  if (hasElevator && hasElevator !== '所有') {
-    whereClauses.push('has_elevator = ?', [hasElevator === '有' ? 1 : 0]);
-  }
+  const whereClause = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
 
-  const whereStr = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
-
-  // Sort
+  // Sort column
   const sortMap = {
-    'tradeDate': 'transaction_date',
+    'tradeDate': 'trade_date',
     'totalPrice': 'total_price',
-    'unitPrice': 'unit_price',
-    'buildingArea': 'building_area',
-    'landArea': 'land_area',
+    'unitPriceSqm': 'unit_price_sqm',
+    'buildingAreaSqm': 'building_area_sqm',
   };
-  const sortCol = sortMap[sortBy] || 'transaction_date';
-  const orderDir = sortOrder === 'asc' ? 'ASC' : 'DESC';
+  const sortColumn = sortMap[sort_by] || sortColParam || 'trade_date';
+  const orderDir = (sortOrder || 'desc').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-  // Count
-  const countSql = `SELECT COUNT(*) as total FROM lvr_records ${whereStr}`;
+  const countSql = `SELECT COUNT(*) as total FROM lvr_records${whereClause ? ' ' : ''}${whereClause}`;
   const countRow = await dbGet(db, countSql, queryParams);
   const total = countRow.total;
 
-  // Data with pagination
   const pageNum = parseInt(page);
-  const pageSizeNum = parseInt(pageSize);
+  const pageSizeNum = parseInt(page_size || pageSize);
   const offset = (pageNum - 1) * pageSizeNum;
 
-  const dataSql = `${whereStr} ORDER BY ${sortCol} ${orderDir} LIMIT ? OFFSET ?`;
+  const dataSql = `SELECT * FROM lvr_records${whereClause ? ' ' : ''}${whereClause} ORDER BY ${sortColumn} ${orderDir} LIMIT ? OFFSET ?`;
   const dataParams = [...queryParams, pageSizeNum, offset];
   const rows = await dbQuery(db, dataSql, dataParams);
 
@@ -200,7 +242,7 @@ async function handleSearch(db, params) {
     page: pageNum,
     pageSize: pageSizeNum,
     totalPages: Math.ceil(total / pageSizeNum),
-    data: formatRows(rows)
+    records: rows
   };
 }
 
@@ -208,7 +250,7 @@ async function handleSearch(db, params) {
 
 async function startServer() {
   const db = await getDB();
-  console.log(`SQLite 資料庫已載入: ${DB_PATH}`);
+  console.log('Database loaded:', DB_PATH);
 
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -226,29 +268,49 @@ async function startServer() {
     }
 
     try {
-      if (pathname === '/api/data/cities' && req.method === 'GET') {
+      if (pathname === '/api/all' && req.method === 'GET') {
+        const result = await handleAll(db);
+        res.writeHead(200);
+        res.end(JSON.stringify(result));
+
+      } else if (pathname.match(/^\/api\/record\/\d+$/) && req.method === 'GET') {
+        const id = parseInt(pathname.split('/')[3]);
+        if (isNaN(id)) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: 'Invalid record ID' }));
+        } else {
+          const result = await handleRecord(db, id);
+          if (result) {
+            res.writeHead(200);
+            res.end(JSON.stringify(result));
+          } else {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'Record not found' }));
+          }
+        }
+
+      } else if (pathname === '/api/cities' && req.method === 'GET') {
         const result = await handleCities(db);
         res.writeHead(200);
         res.end(JSON.stringify(result));
 
-      } else if (pathname === '/api/data/distinct' && req.method === 'GET') {
-        const city = url.searchParams.get('city');
-        if (!city) {
+      } else if (pathname === '/api/districts' && req.method === 'GET') {
+        const cityCode = url.searchParams.get('city_code');
+        if (!cityCode) {
           res.writeHead(200);
           res.end(JSON.stringify({ districts: [], count: 0 }));
           return;
         }
-        const result = await handleDistricts(db, city);
+        const result = await handleDistricts(db, cityCode);
         res.writeHead(200);
         res.end(JSON.stringify(result));
 
-      } else if (pathname === '/api/data/search' && req.method === 'GET') {
+      } else if (pathname === '/api/search' && req.method === 'GET') {
         const params = {};
         for (const [key, value] of url.searchParams.entries()) {
           params[key] = value;
         }
         const result = await handleSearch(db, params);
-        console.log(`search: city=${params.city}, district=${params.district}, total=${result.total}, page=${result.page}/${result.totalPages}`);
         res.writeHead(200);
         res.end(JSON.stringify(result));
 
@@ -257,7 +319,7 @@ async function startServer() {
         res.end(JSON.stringify({ error: 'Not Found' }));
       }
     } catch (err) {
-      console.error('API 錯誤:', err);
+      console.error('Error:', err.message);
       res.writeHead(500);
       res.end(JSON.stringify({ error: err.message }));
     }
@@ -265,16 +327,16 @@ async function startServer() {
 
   const PORT = process.env.PORT || 3002;
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`API 伺服器已啟動: http://localhost:${PORT}`);
-    console.log('可用端點:');
-    console.log('  GET /api/data/cities          - 取得所有縣市');
-    console.log('  GET /api/data/distinct?city=  - 取得特定縣市的行政區');
-    console.log('  GET /api/data/search?...      - 搜尋資料');
-    console.log(`範例: http://localhost:${PORT}/api/data/search?city=台北市&district=大安區&page=1&pageSize=5`);
+    console.log(`API Server: http://localhost:${PORT}`);
+    console.log('/api/all - All records');
+    console.log('/api/record/<id> - Single record');
+    console.log('/api/cities - City list');
+    console.log('/api/districts?city_code=X - Districts list');
+    console.log('/api/search?city_code=a&district=士林區 - Search');
   });
 }
 
 startServer().catch(err => {
-  console.error('啟動失敗:', err);
+  console.error('Startup failed:', err);
   process.exit(1);
 });

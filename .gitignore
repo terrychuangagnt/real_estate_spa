@@ -28,3 +28,11 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Database
+data/db/*.db
+data/lvr/*.db
+
+# Database files
+data/realdb/*.db
+data/db/*.db

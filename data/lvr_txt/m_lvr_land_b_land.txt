@@ -1,0 +1,7 @@
+﻿編號,土地位置,土地移轉面積平方公尺,使用分區或編定,權利人持分分母,權利人持分分子,移轉情形,地號
+The serial number, land position,land shifting area square meter,the use zoning or compiles and checks,,,,land parcel
+RPQNMLMKLHLGFAM38CB,福興段,42.43,都市：住,1000000,62495,持分移轉,04600000
+RPPNMLMKLHLGFAM28CB,福興段,42.43,都市：住,1000000,62495,持分移轉,04600000
+RPQNMLPLLHLGFCM98CB,忠孝段,25.78,都市：住,100000,1006,持分移轉,02460000
+RPPNMLPLLHLGFCM88CB,忠孝段,27.47,都市：住,100000,1072,持分移轉,02460000
+RPPNMLRLLHLGFCM09CB,忠孝段,29.77,都市：住,100000,1162,持分移轉,02460000

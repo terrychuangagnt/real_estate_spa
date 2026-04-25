@@ -156,7 +156,7 @@
         </el-table-column>
         <el-table-column prop="buildingArea" label="建物面積（坪）" width="120" sortable>
           <template #default="{ row }">
-            <span>{{ formatArea(row.buildingArea) }}</span>
+            <span>{{ formatArea(row.buildingAreaSqm || row.buildingArea) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="parkingPriceDisplay" label="車位價（萬）" width="120" sortable>
@@ -294,13 +294,13 @@ function formatTransactionDate(dateStr) {
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
-  const [year, month, day] = dateStr.split('-')
-  const minYear = parseInt(year) - 1911
-  return `${minYear}/${month}/${day}`
+  // 日期已統一為民國年格式 YYY/MM/DD，直接顯示
+  return dateStr
 }
 
 function formatArea(area) {
-  return area ? area.toFixed(1) : '-'
+  // area 单位为「坪」，直接显示
+  return area ? Number(area).toFixed(1) : '-'
 }
 
 function getTypeColor(type) {
