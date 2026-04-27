@@ -231,44 +231,53 @@ for fname in txt_files:
                     if not row or all(cell.strip() == '' for cell in row):
                         continue
                     
-                    total_price = parse_float(row[22]) if len(row) > 22 else None
-                    unit_price = parse_float(row[23]) if len(row) > 23 else None
-                    parking_price = parse_float(row[26]) if len(row) > 26 else None
+                    # CSV 33 欄位對應 (0-indexed):
+                    # 0:區,1:交易,2:位置,3:土地面積,4:都市分區,5:非都市分區,6:非都市編定
+                    # 7:交易年月日,8:交易筆棟數,9:移轉層次,10:總樓層數,11:建物型態
+                    # 12:主要用途,13:主要建材,14:建築完成年月,15:建物移轉總面積
+                    # 16-19:房/廳/衛/隔間,20:管理組織
+                    # 21:總價元,22:單價元/sqm,23:車位類別,24:車位移轉面積,25:車位總價元
+                    # 26:備註,27-30:編號/主建/附屬/陽台,31:電梯,32:移轉編號
+                    
+                    total_price = parse_float(row[21]) if len(row) > 21 else None
+                    unit_price = parse_float(row[22]) if len(row) > 22 else None
+                    parking_price = parse_float(row[25]) if len(row) > 25 else None
                     
                     record = (
                         city_code,
-                        row[0] if len(row) > 0 else '',
-                        row[1] if len(row) > 1 else '',
-                        row[2] if len(row) > 2 else '',
-                        parse_float(row[3]) if len(row) > 3 else None,
-                        row[4] if len(row) > 4 else '',
-                        row[5] if len(row) > 5 else '',
-                        row[6] if len(row) > 6 else '',
-                        parse_date(row[7]) if len(row) > 7 else '',
-                        row[8] if len(row) > 8 else '',
-                        row[9] if len(row) > 9 else '',
-                        parse_int(row[10]) if len(row) > 10 else None,
-                        row[11] if len(row) > 11 else '',
-                        row[12] if len(row) > 12 else '',
-                        row[13] if len(row) > 13 else '',
-                        row[14] if len(row) > 14 else '',
-                        parse_float(row[15]) if len(row) > 15 else None,
-                        parse_int(row[16]) if len(row) > 16 else None,
-                        parse_int(row[17]) if len(row) > 17 else None,
-                        parse_int(row[18]) if len(row) > 18 else None,
-                        row[19] if len(row) > 19 else '',
-                        row[20] if len(row) > 20 else '',
-                        total_price,
-                        unit_price,
-                        row[24] if len(row) > 24 else '',
-                        parse_float(row[25]) if len(row) > 25 else None,
-                        parking_price,
-                        row[27] if len(row) > 27 else '',
-                        row[28] if len(row) > 28 else '',
-                        row[29] if len(row) > 29 else '',
-                        row[30] if len(row) > 30 else '',
-                        row[31] if len(row) > 31 else '',
-                        fname
+                        row[0] if len(row) > 0 else '',            # 1: 鄉鎮市區
+                        row[1] if len(row) > 1 else '',            # 2: 交易標的
+                        row[2] if len(row) > 2 else '',            # 3: 土地位置
+                        parse_float(row[3]) if len(row) > 3 else None,  # 4: 土地移轉總面積
+                        row[4] if len(row) > 4 else '',            # 5: 都市分區
+                        row[5] if len(row) > 5 else '',            # 6: 非都市分區
+                        row[6] if len(row) > 6 else '',            # 7: 非都市編定
+                        parse_date(row[7]) if len(row) > 7 else '',     # 8: 交易年月日
+                        row[8] if len(row) > 8 else '',            # 9: 交易筆棟數
+                        row[9] if len(row) > 9 else '',            # 10: 移轉層次
+                        parse_int(row[10]) if len(row) > 10 else None,    # 11: 總樓層數
+                        row[11] if len(row) > 11 else '',            # 12: 建物型態
+                        row[12] if len(row) > 12 else '',            # 13: 主要用途
+                        row[13] if len(row) > 13 else '',            # 14: 主要建材
+                        row[14] if len(row) > 14 else '',            # 15: 建築完成年月
+                        parse_float(row[15]) if len(row) > 15 else None,  # 16: 建物移轉總面積
+                        parse_int(row[16]) if len(row) > 16 else None,    # 17: 房
+                        parse_int(row[17]) if len(row) > 17 else None,    # 18: 廳
+                        parse_int(row[18]) if len(row) > 18 else None,    # 19: 衛
+                        row[19] if len(row) > 19 else '',            # 20: 隔間
+                        row[20] if len(row) > 20 else '',            # 21: 有無管理組織
+                        total_price,                                 # 22: 總價元
+                        unit_price,                                  # 23: 單價元/sqm
+                        row[23] if len(row) > 23 else '',            # 24: 車位類別
+                        parse_float(row[24]) if len(row) > 24 else None,    # 25: 車位移轉面積
+                        parking_price,                               # 26: 車位總價元
+                        row[26] if len(row) > 26 else '',            # 27: 備註
+                        row[27] if len(row) > 27 else '',            # 28: 編號
+                        row[28] if len(row) > 28 else '',            # 29: 主建物面積
+                        row[29] if len(row) > 29 else '',            # 30: 附屬建物面積
+                        row[30] if len(row) > 30 else '',            # 31: 陽台面積
+                        row[31] if len(row) > 31 else '',            # 32: 電梯
+                        fname                                          # 33: 來源
                     )
                     batch.append(record)
                 

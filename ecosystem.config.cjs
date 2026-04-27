@@ -4,7 +4,7 @@ module.exports = {
     script: './dataServer.js',
     cwd: '/opt/data/home/real_estate_spa',
     instances: 1,
-    exec_mode: 'single',
+    exec_mode: 'fork',
     env: {
       NODE_ENV: 'production',
     },

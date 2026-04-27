@@ -1,342 +1,163 @@
 #!/usr/bin/env node
 /**
- * 實價登錄資料 API 伺服器 (SQLite 版)
- * 讀取本地 SQLite 資料庫 lvr_records 表 (34 columns)
+ * 實價登錄資料伺服器 (SQLite 版)
+ * 讀取 lvr_data.db，提供 API 查詢服務
+ * 修正：欄位名改用小寫（與 DB schema 一致）
  */
 
+import express from 'express';
+import cors from 'cors';
 import sqlite3 from 'sqlite3';
-import { createServer } from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DB_PATH = path.join(__dirname, 'data', 'realdb', 'lvr_data.db');
+const PORT = 3002;
 
-// Database path
-const DB_PATH = '/opt/data/home/real_estate_spa/data/realdb/lvr_data.db';
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-// ========== DB Helpers ==========
+const CITY_MAP = {
+  'a': '台北市', 'b': '台中市', 'c': '基隆市', 'd': '台南市',
+  'e': '高雄市', 'f': '新北市', 'g': '宜蘭縣', 'h': '桃園市',
+  'i': '嘉義市', 'j': '新竹縣', 'k': '苗栗縣', 'm': '南投縣',
+  'n': '彰化縣', 'o': '新竹市', 'p': '雲林縣', 'q': '嘉義縣',
+  't': '屏東縣', 'u': '花蓮縣', 'v': '臺東縣', 'w': '金門縣',
+  'x': '澎湖縣'
+};
 
-function getDB() {
-  return new Promise((resolve, reject) => {
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY, (err) => {
-      if (err) return reject(err);
-      db.run("PRAGMA busy_timeout = 5000");
-      resolve(db);
-    });
-  });
+function formatDate(dateStr) {
+  if (!dateStr || dateStr.length < 8) return dateStr || '';
+  const year = parseInt(dateStr.substring(0, 4));
+  const month = parseInt(dateStr.substring(4, 6));
+  const day = parseInt(dateStr.substring(6, 8));
+  return year + '年' + String(month).padStart(2, '0') + '月' + String(day).padStart(2, '0') + '日';
 }
 
-function dbQuery(db, sql, params = []) {
+function formatPrice(price) {
+  if (price === null || price === undefined) return null;
+  return Number(price).toLocaleString();
+}
+
+const db = new sqlite3.Database(DB_PATH);
+db.serialize(() => {
+  db.run('PRAGMA journal_mode = WAL');
+  db.run('PRAGMA busy_timeout = 5000');
+  console.log('SQLite DB loaded:', DB_PATH);
+});
+
+function allQuery(sql, params = []) {
   return new Promise((resolve, reject) => {
     db.all(sql, params, (err, rows) => {
-      if (err) return reject(err);
-      resolve(rows);
+      if (err) reject(err);
+      else resolve(rows);
     });
   });
 }
 
-function dbGet(db, sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) return reject(err);
-      resolve(row);
+// GET /api/data/cities
+app.get('/api/data/cities', (req, res) => {
+  allQuery('SELECT city_code as code, COUNT(*) as count FROM lvr_records GROUP BY city_code ORDER BY count DESC')
+    .then(rows => {
+      const cities = rows.map(r => ({ code: r.code, name: CITY_MAP[r.code] || r.code, count: r.count }));
+      res.json(cities);
+    }).catch(err => res.status(500).json({ error: err.message }));
+});
+
+// GET /api/data/distinct?city=f
+app.get('/api/data/distinct', (req, res) => {
+  const city = req.query.city;
+  if (!city) return res.json({ districts: [] });
+  // Use LOWER() for case-insensitive match
+  allQuery('SELECT DISTINCT LOWER(district) as name FROM lvr_records WHERE LOWER(city_code) = ? ORDER BY name', [city])
+    .then(rows => {
+      res.json({ districts: rows.map(r => r.name), count: rows.length });
     });
-  });
-}
+});
 
-// ========== Row Formatter ==========
-
-function formatRow(row) {
-  return {
-    id: row.id,
-    city_code: row.city_code,
-    district: row.district,
-    transaction_type: row.transaction_type,
-    address: row.address,
-    land_area_sqm: row.land_area_sqm,
-    urban_zone: row.urban_zone,
-    rural_zone: row.rural_zone,
-    rural_allocation: row.rural_allocation,
-    trade_date: row.trade_date,
-    trade_bundles: row.trade_bundles,
-    transfer_level: row.transfer_level,
-    total_floors: row.total_floors,
-    building_type: row.building_type,
-    main_use: row.main_use,
-    main_material: row.main_material,
-    completion_date: row.completion_date,
-    building_area_sqm: row.building_area_sqm,
-    room_count: row.room_count,
-    living_count: row.living_count,
-    bath_count: row.bath_count,
-    partition_info: row.partition_info,
-    management_org: row.management_org,
-    total_price: row.total_price,
-    unit_price_sqm: row.unit_price_sqm,
-    parking_type: row.parking_type,
-    parking_area_sqm: row.parking_area_sqm,
-    parking_price: row.parking_price,
-    notes: row.notes,
-    id_no: row.id_no,
-    project_name: row.project_name,
-    building_num: row.building_num,
-    termination_info: row.termination_info,
-    source: row.source,
-  };
-}
-
-// ========== API Handlers ==========
-
-async function handleAll(db) {
-  const rows = await dbQuery(db, 'SELECT * FROM lvr_records');
-  return { records: rows.map(formatRow), count: rows.length };
-}
-
-async function handleRecord(db, id) {
-  const row = await dbGet(db, 'SELECT * FROM lvr_records WHERE id = ?', [id]);
-  if (!row) return null;
-  return formatRow(row);
-}
-
-async function handleCities(db) {
-  const rows = await dbQuery(db, `
-    SELECT city_code, COUNT(*) as count
-    FROM lvr_records
-    GROUP BY city_code
-    ORDER BY count DESC
-  `);
-  // Return in frontend-compatible format
-  return rows.map(r => ({
-    name: getCityName(r.city_code),
-    code: r.city_code,
-    count: r.count
-  }));
-}
-
-function getCityName(code) {
-  const map = {
-    'a': '台北市', 'b': '台中市', 'c': '基隆市', 'd': '台南市',
-    'e': '高雄市', 'f': '新北市', 'g': '宜蘭縣', 'h': '桃園市',
-    'i': '嘉義市', 'j': '新竹縣', 'k': '苗栗縣', 'm': '南投縣',
-    'n': '彰化縣', 'o': '新竹市', 'p': '雲林縣', 'q': '嘉義縣',
-    't': '屏東縣', 'u': '花蓮縣', 'v': '台東縣', 'w': '金門縣',
-    'x': '澎湖縣'
-  };
-  return map[code] || code;
-}
-
-async function handleDistricts(db, cityCode) {
-  const rows = await dbQuery(db, `
-    SELECT DISTINCT district
-    FROM lvr_records
-    WHERE city_code = ? AND district != ''
-    ORDER BY district
-  `, [cityCode]);
-  return {
-    districts: rows.map(r => r.district),
-    count: rows.length
-  };
-}
-
-async function handleSearch(db, params) {
+// GET /api/data/search
+app.get('/api/data/search', (req, res) => {
   const {
-    city_code,
-    district,
-    transaction_type,
-    transactionType,  // also accept camelCase variant
-    min_price,
-    max_price,
-    unit_price_min,
-    unit_price_max,
-    minArea,
-    maxArea,
-    minRooms,
-    maxRooms,
+    city, district, transactionType,
+    totalPriceMin, totalPriceMax,
+    unitPriceMin, unitPriceMax,
+    minArea, maxArea,
+    roomCount,
     minBathrooms,
-    maxBathrooms,
-    hasElevator,
-    keyword,
-    page = 1,
-    page_size,
-    pageSize = 10,
-    sort_by = 'trade_date',
-    sortColParam = 'trade_date',
+    startDate, endDate,
+    page = 1, pageSize = 10,
+    sortBy = 'trade_date',
     sortOrder = 'desc'
-  } = params;
+  } = req.query;
 
-  const whereClauses = [];
-  const queryParams = [];
+  const validSortFields = ['trade_date', 'total_price', 'unit_price_sqm', 'land_area_sqm', 'building_area_sqm', 'id'];
+  const safeSortField = validSortFields.includes(sortBy) ? sortBy : 'trade_date';
+  const safeSortOrder = ['asc', 'desc'].includes(sortOrder) ? sortOrder : 'desc';
 
-  if (city_code && city_code !== '') {
-    whereClauses.push('city_code = ?');
-    queryParams.push(city_code);
-  }
+  let where = [];
+  let params = [];
 
-  if (district && district !== '') {
-    whereClauses.push('district = ?');
-    queryParams.push(district);
-  }
+  if (city && city !== 'all') { where.push('LOWER(city_code) = ?'); params.push(city); }
+  if (district) { where.push('LOWER(district) = ?'); params.push(decodeURIComponent(district).toLowerCase()); }
+  if (transactionType) { where.push('LOWER(transaction_type) = ?'); params.push(transactionType.toLowerCase()); }
+  if (totalPriceMin) { where.push('total_price >= ?'); params.push(parseFloat(totalPriceMin)); }
+  if (totalPriceMax) { where.push('total_price <= ?'); params.push(parseFloat(totalPriceMax)); }
+  if (unitPriceMin) { where.push('unit_price_sqm >= ?'); params.push(parseFloat(unitPriceMin)); }
+  if (unitPriceMax) { where.push('unit_price_sqm <= ?'); params.push(parseFloat(unitPriceMax)); }
+  if (minArea) { where.push('(land_area_sqm + building_area_sqm) >= ?'); params.push(parseFloat(minArea)); }
+  if (maxArea) { where.push('(land_area_sqm + building_area_sqm) <= ?'); params.push(parseFloat(maxArea)); }
+  if (roomCount) { where.push('room_count = ?'); params.push(parseInt(roomCount)); }
+  if (minBathrooms) { where.push('bath_count >= ?'); params.push(parseInt(minBathrooms)); }
+  if (startDate) { where.push('trade_date >= ?'); params.push(startDate); }
+  if (endDate) { where.push('trade_date <= ?'); params.push(endDate); }
 
-  // Accept both transaction_type and transactionType
-  const txType = transaction_type || transactionType || '';
-  if (txType && txType !== '') {
-    whereClauses.push('transaction_type = ?');
-    queryParams.push(txType);
-  }
+  const whereClause = where.length > 0 ? 'WHERE ' + where.join(' AND ') : '';
 
-  // Keyword search on address and city_code
-  if (keyword && keyword !== '') {
-    whereClauses.push('(address LIKE ? OR city_code = ?)');
-    queryParams.push('%' + keyword + '%', keyword);
-  }
-
-  // Price in NTD
-  if (min_price && min_price !== '') { whereClauses.push('total_price >= ?'); queryParams.push(parseFloat(min_price)); }
-  if (max_price && max_price !== '') { whereClauses.push('total_price <= ?'); queryParams.push(parseFloat(max_price)); }
-
-  // Unit price per sqm
-  const minUnit = unit_price_min || 0;
-  const maxUnit = unit_price_max || 0;
-  if (minUnit && parseFloat(minUnit) > 0) { whereClauses.push('unit_price_sqm >= ?'); queryParams.push(parseFloat(minUnit)); }
-  if (maxUnit && parseFloat(maxUnit) > 0) { whereClauses.push('unit_price_sqm <= ?'); queryParams.push(parseFloat(maxUnit)); }
-
-  // Area in sqm
-  if (minArea && minArea !== '') { whereClauses.push('building_area_sqm >= ?'); queryParams.push(parseFloat(minArea)); }
-  if (maxArea && maxArea !== '') { whereClauses.push('building_area_sqm <= ?'); queryParams.push(parseFloat(maxArea)); }
-
-  // Rooms
-  if (minRooms && minRooms !== '') { whereClauses.push('room_count >= ?'); queryParams.push(parseInt(minRooms)); }
-  if (maxRooms && maxRooms !== '') { whereClauses.push('room_count <= ?'); queryParams.push(parseInt(maxRooms)); }
-
-  // Bathrooms
-  if (minBathrooms && minBathrooms !== '') { whereClauses.push('bath_count >= ?'); queryParams.push(parseInt(minBathrooms)); }
-  if (maxBathrooms && maxBathrooms !== '') { whereClauses.push('bath_count <= ?'); queryParams.push(parseInt(maxBathrooms)); }
-
-  const whereClause = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
-
-  // Sort column
-  const sortMap = {
-    'tradeDate': 'trade_date',
-    'totalPrice': 'total_price',
-    'unitPriceSqm': 'unit_price_sqm',
-    'buildingAreaSqm': 'building_area_sqm',
-  };
-  const sortColumn = sortMap[sort_by] || sortColParam || 'trade_date';
-  const orderDir = (sortOrder || 'desc').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-
-  const countSql = `SELECT COUNT(*) as total FROM lvr_records${whereClause ? ' ' : ''}${whereClause}`;
-  const countRow = await dbGet(db, countSql, queryParams);
-  const total = countRow.total;
-
-  const pageNum = parseInt(page);
-  const pageSizeNum = parseInt(page_size || pageSize);
-  const offset = (pageNum - 1) * pageSizeNum;
-
-  const dataSql = `SELECT * FROM lvr_records${whereClause ? ' ' : ''}${whereClause} ORDER BY ${sortColumn} ${orderDir} LIMIT ? OFFSET ?`;
-  const dataParams = [...queryParams, pageSizeNum, offset];
-  const rows = await dbQuery(db, dataSql, dataParams);
-
-  return {
-    total,
-    page: pageNum,
-    pageSize: pageSizeNum,
-    totalPages: Math.ceil(total / pageSizeNum),
-    records: rows
-  };
-}
-
-// ========== Server ==========
-
-async function startServer() {
-  const db = await getDB();
-  console.log('Database loaded:', DB_PATH);
-
-  const server = createServer(async (req, res) => {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const pathname = url.pathname;
-
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-
-    try {
-      if (pathname === '/api/all' && req.method === 'GET') {
-        const result = await handleAll(db);
-        res.writeHead(200);
-        res.end(JSON.stringify(result));
-
-      } else if (pathname.match(/^\/api\/record\/\d+$/) && req.method === 'GET') {
-        const id = parseInt(pathname.split('/')[3]);
-        if (isNaN(id)) {
-          res.writeHead(400);
-          res.end(JSON.stringify({ error: 'Invalid record ID' }));
-        } else {
-          const result = await handleRecord(db, id);
-          if (result) {
-            res.writeHead(200);
-            res.end(JSON.stringify(result));
-          } else {
-            res.writeHead(404);
-            res.end(JSON.stringify({ error: 'Record not found' }));
-          }
-        }
-
-      } else if (pathname === '/api/cities' && req.method === 'GET') {
-        const result = await handleCities(db);
-        res.writeHead(200);
-        res.end(JSON.stringify(result));
-
-      } else if (pathname === '/api/districts' && req.method === 'GET') {
-        const cityCode = url.searchParams.get('city_code');
-        if (!cityCode) {
-          res.writeHead(200);
-          res.end(JSON.stringify({ districts: [], count: 0 }));
-          return;
-        }
-        const result = await handleDistricts(db, cityCode);
-        res.writeHead(200);
-        res.end(JSON.stringify(result));
-
-      } else if (pathname === '/api/search' && req.method === 'GET') {
-        const params = {};
-        for (const [key, value] of url.searchParams.entries()) {
-          params[key] = value;
-        }
-        const result = await handleSearch(db, params);
-        res.writeHead(200);
-        res.end(JSON.stringify(result));
-
-      } else {
-        res.writeHead(404);
-        res.end(JSON.stringify({ error: 'Not Found' }));
+  allQuery('SELECT COUNT(*) as total FROM lvr_records ' + whereClause, params)
+    .then(countRows => {
+      if (!countRows || countRows.length === 0 || countRows[0].total === 0) {
+        res.json({ data: [], total: 0, page: parseInt(page), perPage: parseInt(pageSize), totalPages: 0 });
+        return;
       }
-    } catch (err) {
-      console.error('Error:', err.message);
-      res.writeHead(500);
-      res.end(JSON.stringify({ error: err.message }));
-    }
-  });
+      const totalCount = countRows[0].total;
+      const pageNum = parseInt(page);
+      const pageSizeNum = parseInt(pageSize);
+      const offset = (pageNum - 1) * pageSizeNum;
+      allQuery('SELECT * FROM lvr_records ' + whereClause + ' ORDER BY ' + safeSortField + ' ' + safeSortOrder + ' LIMIT ? OFFSET ?', [...params, pageSizeNum, offset])
+        .then(rows => res.json({
+          data: rows.map(r => ({
+            id: r.id, city_code: r.city_code, district: r.district, transaction_type: r.transaction_type,
+            address: r.address, land_area_sqm: r.land_area_sqm, urban_zone: r.urban_zone,
+            trade_date: r.trade_date, trade_date_formatted: formatDate(r.trade_date),
+            building_type: r.building_type, building_use: r.main_use, building_area_sqm: r.building_area_sqm,
+            room_count: r.room_count, bath_count: r.bath_count,
+            total_price: r.total_price, total_price_display: formatPrice(r.total_price),
+            unit_price_sqm: r.unit_price_sqm, unit_price_sqm_display: formatPrice(r.unit_price_sqm),
+            parking_type: r.parking_type, parking_price: r.parking_price,
+            parking_price_display: formatPrice(r.parking_price),
+            completion_date_formatted: formatDate(r.completion_date),
+            source: r.source, project_name: r.project_name
+          })),
+          total: totalCount, page: pageNum, perPage: pageSizeNum, totalPages: Math.ceil(totalCount / pageSizeNum)
+        }));
+    });
+});
 
-  const PORT = process.env.PORT || 3002;
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`API Server: http://localhost:${PORT}`);
-    console.log('/api/all - All records');
-    console.log('/api/record/<id> - Single record');
-    console.log('/api/cities - City list');
-    console.log('/api/districts?city_code=X - Districts list');
-    console.log('/api/search?city_code=a&district=士林區 - Search');
-  });
-}
+app.get('/api/data/health', (req, res) => {
+  allQuery('SELECT COUNT(*) as total FROM lvr_records')
+    .then(rows => res.json({ status: 'ok', database: 'lvr_data.db', total_records: rows[0].total, port: PORT }));
+});
 
-startServer().catch(err => {
-  console.error('Startup failed:', err);
-  process.exit(1);
+app.set('json replacer', function(key, value) {
+  if (value === null || value === undefined) return '';
+  return String(value);
+});
+
+app.listen(PORT, () => {
+  console.log('實價登錄資料伺服器(SQLite版)已啟動: http://localhost:' + PORT);
+  allQuery('SELECT COUNT(*) as total FROM lvr_records').then(rows => {
+    console.log('Loaded ' + rows[0].total + ' records from SQLite database');
+  });
 });
