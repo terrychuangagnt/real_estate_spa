@@ -34,14 +34,34 @@ const mapContainerRef = ref(null)
 let map = null
 const store = useRealEstateStore()
 
+const records = ref([])
+
 watch(() => store.mapMode, (mode) => {
   if (mode === 'map' && map) {
     map.invalidateSize()
   }
 })
 
-watch(() => store.records, (records) => {
-  // PriceHeatmap 和 MarkerCluster 會透過 props 自動同步
+watch(() => store.records, (newRecords) => {
+  if (newRecords && newRecords.length > 0) {
+    records.value = newRecords.map(r => ({
+      lat: Number(r.Lat) || Number(r.lat),
+      lng: Number(r.Lng) || Number(r.lng),
+      price: Number(r.Price) || Number(r.price),
+      area: Number(r.Area) || Number(r.area),
+      unitPrice: Number(r.UnitPrice) || Number(r.unitPrice),
+      houseType: r.HouseType || r.houseType || '',
+      buildingType: r.BuildingType || r.buildingType || '',
+      floorTotal: r.FloorTotal || r.floorTotal || 0,
+      floorBuilding: r.FloorBuilding || r.floorBuilding || 0,
+      latitude: r.Latitude || r.latitude || '',
+      longitude: r.Longitude || r.longitude || '',
+      city: r.City || r.city || '',
+      district: r.District || r.district || '',
+      address: r.Address || r.address || '',
+      transaction: r.Transaction || r.transaction || '',
+    }))
+  }
 }, { deep: true })
 
 onMounted(async () => {

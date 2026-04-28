@@ -20,11 +20,11 @@
             <span>實價查詢</span>
           </el-menu-item>
           <el-menu-item index="/history">
-            <el-icon><History /></el-icon>
+            <el-icon><Search /></el-icon>
             <span>搜尋歷史</span>
           </el-menu-item>
           <el-menu-item index="/map">
-            <el-icon><Map /></el-icon>
+            <el-icon><Search /></el-icon>
             <span>地圖</span>
           </el-menu-item>
         </el-menu>
@@ -46,6 +46,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { House, Search } from '@element-plus/icons-vue'
 
 const route = useRoute()
 
