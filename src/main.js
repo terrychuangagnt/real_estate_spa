@@ -10,11 +10,13 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import SearchView from './views/SearchView.vue'
 import HistoryView from './views/HistoryView.vue'
+import MapView from './components/map/MapView.vue'
 
 const routes = [
   { path: '/', redirect: '/search' },
   { path: '/search', name: 'Search', component: SearchView },
   { path: '/history', name: 'History', component: HistoryView },
+  { path: '/map', name: 'Map', component: MapView },
 ]
 
 const router = createRouter({

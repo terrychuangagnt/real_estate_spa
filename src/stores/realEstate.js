@@ -17,6 +17,12 @@ export const useRealEstateStore = defineStore('realEstate', () => {
   })
   const recentSearches = ref([])
   
+  // 地圖相關 state
+  const mapMode = ref('list') // 'list' | 'map'
+  const mapRecords = ref([])
+  const selectedDistrict = ref(null)
+  const heatmapVisible = ref(true)
+
   // 分頁資訊
   const pagination = ref({
     total: 0,
@@ -76,6 +82,16 @@ export const useRealEstateStore = defineStore('realEstate', () => {
     }
   }
 
+  function setMapMode(mode) {
+    mapMode.value = mode
+  }
+  function setMapRecords(records) {
+    mapRecords.value = records
+  }
+  function toggleHeatmap() {
+    heatmapVisible.value = !heatmapVisible.value
+  }
+
   function resetParams() {
     searchParams.value = {
       county: '台北市',
@@ -93,5 +109,7 @@ export const useRealEstateStore = defineStore('realEstate', () => {
     records, loading, error, searchParams, recentSearches,
     totalTransactions, avgPrice, search,
     pagination, setPage, nextPage, prevPage, resetParams,
+    mapMode, mapRecords, selectedDistrict, heatmapVisible,
+    setMapMode, setMapRecords, toggleHeatmap,
   }
 })

@@ -23,6 +23,10 @@
             <el-icon><History /></el-icon>
             <span>搜尋歷史</span>
           </el-menu-item>
+          <el-menu-item index="/map">
+            <el-icon><Map /></el-icon>
+            <span>地圖</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
 
@@ -49,6 +53,7 @@ const pageTitle = computed(() => {
   const map = {
     '/search': '實價查詢',
     '/history': '搜尋歷史與統計',
+    '/map': '地圖',
   }
   return map[route.path] || '實價查詢'
 })
