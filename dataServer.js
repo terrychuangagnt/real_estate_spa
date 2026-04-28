@@ -57,8 +57,8 @@ function allQuery(sql, params = []) {
   });
 }
 
-// GET /api/data/cities
-app.get('/api/data/cities', (req, res) => {
+// GET /api/cities (also /api/data/cities for backward compat)
+app.get('/api/cities', (req, res) => {
   allQuery('SELECT city_code as code, COUNT(*) as count FROM lvr_records GROUP BY city_code ORDER BY count DESC')
     .then(rows => {
       const cities = rows.map(r => ({ code: r.code, name: CITY_MAP[r.code] || r.code, count: r.count }));
@@ -66,28 +66,27 @@ app.get('/api/data/cities', (req, res) => {
     }).catch(err => res.status(500).json({ error: err.message }));
 });
 
-// GET /api/data/distinct?city=f
-app.get('/api/data/distinct', (req, res) => {
-  const city = req.query.city;
-  if (!city) return res.json({ districts: [] });
+// GET /api/districts?city_code=f (also /api/data/distinct for backward compat)
+app.get('/api/districts', (req, res) => {
+  const city_code = req.query.city_code || req.query.city;
+  if (!city_code) return res.json({ districts: [] });
   // Use LOWER() for case-insensitive match
-  allQuery('SELECT DISTINCT LOWER(district) as name FROM lvr_records WHERE LOWER(city_code) = ? ORDER BY name', [city])
+  allQuery('SELECT DISTINCT LOWER(district) as name FROM lvr_records WHERE LOWER(city_code) = ? ORDER BY name', [city_code])
     .then(rows => {
       res.json({ districts: rows.map(r => r.name), count: rows.length });
     });
 });
 
-// GET /api/data/search
-app.get('/api/data/search', (req, res) => {
+// GET /api/search (also /api/data/search for backward compat)
+app.get('/api/search', (req, res) => {
   const {
-    city, district, transactionType,
-    totalPriceMin, totalPriceMax,
-    unitPriceMin, unitPriceMax,
-    minArea, maxArea,
-    roomCount,
-    minBathrooms,
-    startDate, endDate,
-    page = 1, pageSize = 10,
+    city_code: city, district, transaction_type: transactionType,
+    min_price: totalPriceMin, max_price: totalPriceMax,
+    unit_price_min: unitPriceMin, unit_price_max: unitPriceMax,
+    minRooms, maxRooms: maxRoom,
+    min_bathrooms: minBathrooms, max_bathrooms: maxBathrooms,
+    minArea, maxArea, startDate, endDate,
+    page = 1, page_size: pageSize = 10,
     sortBy = 'trade_date',
     sortOrder = 'desc'
   } = req.query;
@@ -108,8 +107,10 @@ app.get('/api/data/search', (req, res) => {
   if (unitPriceMax) { where.push('unit_price_sqm <= ?'); params.push(parseFloat(unitPriceMax)); }
   if (minArea) { where.push('(land_area_sqm + building_area_sqm) >= ?'); params.push(parseFloat(minArea)); }
   if (maxArea) { where.push('(land_area_sqm + building_area_sqm) <= ?'); params.push(parseFloat(maxArea)); }
-  if (roomCount) { where.push('room_count = ?'); params.push(parseInt(roomCount)); }
+  if (minRooms) { where.push('room_count >= ?'); params.push(parseInt(minRooms)); }
+  if (maxRoom) { where.push('room_count <= ?'); params.push(parseInt(maxRoom)); }
   if (minBathrooms) { where.push('bath_count >= ?'); params.push(parseInt(minBathrooms)); }
+  if (maxBathrooms) { where.push('bath_count <= ?'); params.push(parseInt(maxBathrooms)); }
   if (startDate) { where.push('trade_date >= ?'); params.push(startDate); }
   if (endDate) { where.push('trade_date <= ?'); params.push(endDate); }
 

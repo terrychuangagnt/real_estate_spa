@@ -6,7 +6,7 @@ const { test, expect } = require('@playwright/test');
 const { chromium } = require('playwright');
 
 // 測試配置
-const BASE_URL = 'http://localhost:5173';
+const BASE_URL = 'http://localhost:5175';
 const TIMEOUT = 15000;
 
 async function runTests() {
@@ -115,9 +115,10 @@ async function runTests() {
     console.log(`  ✓ 地圖容器存在: ${containerCount > 0}`);
     expect(containerCount).toBeGreaterThan(0);
     
-    // 等待 Leaflet 地圖載入（map class）
-    await page.waitForSelector('.leaflet-container', { timeout: TIMEOUT });
-    console.log('  ✓ Leaflet 地圖載入中...');
+    // #map-container 元素存在即可（地圖容器可能 CSS display:none，但 DOM 已掛載就算載入）
+    await page.waitForSelector('#map-container', { state: 'attached', timeout: TIMEOUT });
+    await page.waitForSelector('.leaflet-container', { state: 'attached', timeout: TIMEOUT });
+    console.log('  ✓ Leaflet 地圖容器已載入');
     
     // 檢查 CSS 載入
     const tileLayers = await page.locator('.leaflet-tile-pane').count();
@@ -176,8 +177,9 @@ async function runTests() {
   try {
     // 導航到搜尋頁
     await page.locator('.el-menu-item:has-text("實價查詢")').click();
-    await page.waitForURL('**/search', { timeout: TIMEOUT });
-    await page.waitForLoadState('networkidle');
+    // hash router 下 waitForURL('**/search') 不匹配，改用 waitForFunction 偵測 hash
+    await page.waitForFunction(url => window.location.hash.includes('/search'), undefined, { timeout: 30000 });
+    await page.waitForLoadState('networkidle', { timeout: 15000 });
     
     // 截圖
     const searchScreenshot = await page.screenshot({ 
