@@ -11,13 +11,15 @@ export default defineConfig({
   },
   use: {
     baseURL: 'http://localhost:5173',
-    screenshot: 'only-on-failure',
-    trace: 'on-first-retry',
+    screenshot: 'on',
+    trace: 'retain-on-failure',
   },
+  reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
+  outputDir: 'tests/screenshots',
   webServer: {
     command: 'npm run dev',
     port: 5173,
-    reuseExisting: true,
+    reuseExistingServer: true,
     timeout: 120000,
   },
 })
