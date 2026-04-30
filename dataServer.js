@@ -126,7 +126,8 @@ app.get('/api/search', (req, res) => {
       const pageNum = parseInt(page);
       const pageSizeNum = parseInt(pageSize);
       const offset = (pageNum - 1) * pageSizeNum;
-      allQuery('SELECT * FROM lvr_records ' + whereClause + ' ORDER BY ' + safeSortField + ' ' + safeSortOrder + ' LIMIT ? OFFSET ?', [...params, pageSizeNum, offset])
+      const sql = `SELECT * FROM lvr_records ${whereClause} ORDER BY ${safeSortField} ${safeSortOrder} LIMIT ${pageSizeNum} OFFSET ${offset}`;
+      allQuery(sql, params)
         .then(rows => res.json({
           data: rows.map(r => ({
             id: r.id, city_code: r.city_code, district: r.district, transaction_type: r.transaction_type,
@@ -151,10 +152,7 @@ app.get('/api/data/health', (req, res) => {
     .then(rows => res.json({ status: 'ok', database: 'lvr_data.db', total_records: rows[0].total, port: PORT }));
 });
 
-app.set('json replacer', function(key, value) {
-  if (value === null || value === undefined) return '';
-  return String(value);
-});
+// (removed buggy json replacer that corrupted all JSON responses)
 
 app.listen(PORT, () => {
   console.log('實價登錄資料伺服器(SQLite版)已啟動: http://localhost:' + PORT);
