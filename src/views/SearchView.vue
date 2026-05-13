@@ -9,7 +9,7 @@
               <el-select v-model="form.county" placeholder="請選擇縣市" filterable @change="onCountyChange">
                 <el-option
                   v-for="c in cityList"
-                  :key="c.name"
+                  :key="c.code || c.name"
                   :label="`${c.name} (${c.count})`"
                   :value="c.name"
                 />
@@ -222,6 +222,7 @@ const form = ref({
   unitPriceMax: 0,
   minArea: 0,
   maxArea: 0,
+  pageSize: 10,
 })
 
 onMounted(async () => {
@@ -237,10 +238,11 @@ onMounted(async () => {
 
 async function loadDistricts() {
   if (!form.value.county) return
+  const cityCode = cityList.value.find(c => c.name === form.value.county)?.code
   
   districtsLoading.value = true
   try {
-    const districts = await getDistricts(form.value.county)
+    const districts = await getDistricts(cityCode || form.value.county)
     currentDistricts.value = districts || []
   } finally {
     districtsLoading.value = false
@@ -265,8 +267,10 @@ async function onSearch() {
   }
   
   const start = Date.now()
+  const cityCode = cityList.value.find(c => c.name === form.value.county)?.code
   await store.search({
     county: form.value.county,
+    cityCode,
     district: form.value.district,
     keyword: form.value.keyword,
     type: form.value.type,
@@ -309,7 +313,7 @@ function getTypeColor(type) {
     '預售屋': 'warning',
     '租賃': 'info',
   }
-  return colors[type] || 'default'
+  return colors[type] || 'info'
 }
 
 function handlePageChange(page) {
@@ -333,6 +337,7 @@ function onReset() {
     unitPriceMax: 0,
     minArea: 0,
     maxArea: 0,
+    pageSize: store.pagination.pageSize || 10,
   }
   store.resetParams()
   store.records = []

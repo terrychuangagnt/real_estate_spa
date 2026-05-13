@@ -7,6 +7,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     include: ['tests/**/*.test.{js,ts}'],
+    globalSetup: ['tests/globalSetup.js'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

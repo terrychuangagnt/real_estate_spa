@@ -5,42 +5,25 @@
 
 import { test, expect } from '@playwright/test'
 
+async function goToMap(page) {
+  await page.getByRole('menuitem', { name: '地圖' }).click()
+  await expect(page.getByRole('heading', { name: '地圖' })).toBeVisible()
+}
+
 test.describe('地圖模式', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173')
-    await page.waitForTimeout(500)
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: '實價查詢' })).toBeVisible()
   })
 
   test('should switch to map mode', async ({ page }) => {
-    // 先搜尋一些資料（新北市）
-    await page.locator('text=請選擇縣市').click()
-    await page.waitForTimeout(300)
-    await page.locator('text=新北市').click()
-    await page.waitForTimeout(500)
-    
-    await page.locator('text=開始查詢').click()
-    await page.waitForTimeout(1000)
-    
-    // 點擊地圖圖示切換地圖模式
-    const mapBtn = page.locator('.el-icon-map-location, [class*="map"], :has-text("地圖")').first()
-    if (await mapBtn.isVisible().catch(() => false)) {
-      await mapBtn.click()
-      await page.waitForTimeout(1000)
-    }
+    await goToMap(page)
+    await expect(page.locator('#map-container')).toBeAttached()
+    await expect(page.locator('.leaflet-container')).toBeVisible()
   })
 
   test('should display heatmap control', async ({ page }) => {
-    // 搜尋後切換地圖
-    await page.locator('text=請選擇縣市').click()
-    await page.waitForTimeout(300)
-    await page.locator('text=新北市').click()
-    await page.waitForTimeout(500)
-    
-    await page.locator('text=開始查詢').click()
-    await page.waitForTimeout(1000)
-    
-    // 地圖模式應該有熱力圖控制
-    // (具體元素取決於 MapView.vue 的實現)
-    await page.waitForTimeout(500)
+    await goToMap(page)
+    await expect(page.locator('.map-legend')).toBeVisible()
   })
 })

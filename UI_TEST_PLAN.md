@@ -1,62 +1,54 @@
-## 實價登錄 SPA - UI 測試結果報告
+# UI / E2E 測試計畫
 
-**測試日期**：2026-04-28
-**測試工具**：Playwright (Chromium, headless)
-**測試檔案**：`tests/playwright_map_test.cjs`
-**測試總數**：16 項
-**通過率**：100% (16/16)
+## 目的
 
-### 測試環境
-- 前端：Vue 3 + Vite + Element Plus + Pinia + Vue Router (Hash Mode) — `http://localhost:5175`
-- 後端：Node.js dataServer (port 3002)
-- 測試模式：Hash Router (`#/search`, `#/map`, `#/history`)
-- slowMo：500ms（方便觀察）
+驗證使用者主要流程是否可用，並確保 Playwright 測試環境同時具備前端 Vite server 與後端 API server。
 
-### 測試結果總覽
+## 測試環境
 
-| # | 測試模組 | 子項目 | 狀態 |
-|---|---------|--------|------|
-| 1 | **首頁載入** | 標題「實價查詢」、選單 3 項、URL `/#/search` | ✅ PASS |
-| 2 | **地圖模式** | 標題「地圖」、URL `/#/map`、`#map-container`、Leaflet 容器、瓦片層 | ✅ PASS |
-| 3 | **地圖功能** | 疊加層 1、標記 1、熱力圖例可見 | ✅ PASS |
-| 4 | **搜尋功能** | 從地圖頁點擊導航回搜尋頁、搜尋卡片出現、10 個搜尋欄位、「開始查詢」按鈕 | ✅ PASS |
-| 5 | **導航切換** | 搜尋歷史頁標題、返回地圖頁標題 | ✅ PASS |
+| 服務 | 指令 | URL |
+|------|------|-----|
+| API server | `node dataServer.js` | `http://localhost:3002` |
+| Vite dev server | `npm run dev` | `http://localhost:5173` |
 
-### 修復記錄
+`playwright.config.js` 已設定 `webServer` 陣列，執行 `npx playwright test` 時會自動啟動上述兩個服務。
 
-| 問題 | 原因 | 解決方案 |
-|------|------|---------|
-| 測試 2 (地圖模式) hash URL 偵測 timeout | `waitForURL` 不匹配 Hash Router | 改用 `page.goto('/#/map')` + `waitForSelector('#map-container', state:'attached')` |
-| 測試 4 (搜尋功能) selector 找不到 | `waitForFunction` wait for hash 變化 unreliable | 改用 `page.waitForSelector('.search-card', state:'visible')` |
-| 測試 4/5 選單元素無法識別 | Element Plus shadow DOM + `.el-menu-item:has-text()` 不支援 | 測試 4 改用 `page.goto('/#/search')` 直接導航；測試 5 改用 `getByRole('menuitem')` |
-| Leaflet 容器 `visible` 狀態檢查失敗 | 地圖容器 CSS `display:none` 但 DOM 已掛載 | 改用 `state: 'attached'` 檢查 DOM 掛載即可 |
+## 測試範圍
 
-### 測試腳本架構
-```
-playwright_map_test.cjs (CJS, 因 package.json type=module)
-  ├── 測試 1: 首頁載入 (4 assertions)
-  │   ├── 標題 = '實價查詢'
-  │   ├── 選單元素 >= 3
-  │   └── URL 包含 '/search'
-  ├── 測試 2: 地圖模式 (5 assertions)
-  │   ├── 標題 = '地圖' (waitForFunction 等待 title 更新)
-  │   ├── URL 包含 '/map'
-  │   ├── #map-container 掛載
-  │   ├── .leaflet-container attached
-  │   └── .leaflet-tile-pane 存在
-  ├── 測試 3: 地圖功能 (1 test block)
-  │   └── 疊加層 + 圖例
-  ├── 測試 4: 搜尋功能 (3 assertions)
-  │   ├── 搜尋卡片可見
-  │   ├── 搜尋欄位 >= 1
-  │   └── '開始查詢' 按鈕可見
-  └── 測試 5: 導航切換 (3 assertions)
-      ├── .history-card 可見
-      ├── 歷史頁標題 = '搜尋歷史與統計'
-      └── 返回地圖標題 = '地圖'
+| 流程 | 測試重點 | 對應檔案 |
+|------|----------|----------|
+| 搜尋頁載入 | 預設表單、縣市與行政區欄位可見 | `tests/e2e/search.spec.js` |
+| 縣市選單 | 可開啟選單，主要縣市出現 | `tests/e2e/search.spec.js` |
+| 搜尋送出 | 選縣市後查詢，顯示搜尋結果與統計 | `tests/e2e/search.spec.js` |
+| 價格篩選 | 輸入價格範圍後可送出 | `tests/e2e/search.spec.js` |
+| 分頁 | 搜尋結果出現分頁資訊與元件 | `tests/e2e/search.spec.js` |
+| 地圖模式 | 搜尋後可切換或顯示地圖相關 UI | `tests/e2e/map.spec.js` |
+| 搜尋歷史 | 可進入歷史頁，空狀態/清除功能可見 | `tests/e2e/history.spec.js` |
 
-結果儲存 → /tmp/test_results.json
+## 執行方式
+
+```bash
+npx playwright test
 ```
 
-### 已知問題
-- 控制台出現 502 Bad Gateway 警告（可能是開發伺服器某些 API endpoint 尚未實作），不影響測試功能。
+產出的 HTML report 會寫入 `playwright-report/`。
+
+## 驗收標準
+
+1. 測試啟動時不需要手動先開 API server。
+2. Playwright report 內不得出現 `/api` proxy 連線失敗造成的測試失敗。
+3. 若測試失敗，需能從 trace 或 error-context 判斷是 selector 過期、功能 bug、資料問題或外部資源問題。
+4. 文件只記錄已實際執行過的結果，不沿用舊的 100% 通過敘述。
+
+## 已知風險
+
+1. Element Plus 下拉選單 DOM 結構可能讓 `text=` selector 不穩，必要時應改用 role、placeholder 或 `.el-select-dropdown` 範圍內定位。
+2. Leaflet tiles 可能受網路或外部圖資服務影響，E2E 應優先驗證容器與本地控制項，視需求再驗證瓦片像素。
+3. 搜尋結果依 SQLite 資料內容而定，測試應避免假設固定總筆數。
+4. 舊版 `tests/playwright_map_test.cjs` 使用 `http://localhost:5175`，與目前正式 Playwright config 不一致，需整理用途。
+
+## 下一步
+
+1. 重新跑完整 E2E 並更新實際結果。
+2. 將不穩定 selector 改成更貼近使用者語意的定位方式。
+3. 把正式測試與一次性截圖/驗證腳本分開命名或移至文件說明。

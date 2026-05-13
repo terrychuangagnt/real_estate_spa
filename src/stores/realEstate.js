@@ -7,6 +7,7 @@ export const useRealEstateStore = defineStore('realEstate', () => {
   const error = ref(null)
   const searchParams = ref({
     county: '台北市',
+    cityCode: 'a',
     district: '信義區',
     keyword: '',
     landCategory: '全部',
@@ -36,7 +37,7 @@ export const useRealEstateStore = defineStore('realEstate', () => {
   const avgPrice = computed(() => {
     if (records.value.length === 0) return 0
     const sum = records.value.reduce((acc, r) => acc + (Number(r.unitPrice) || 0), 0)
-    return (sum / records.value.length).toFixed(0)
+    return Math.round(sum / records.value.length)
   })
 
   async function search(params) {
@@ -51,7 +52,7 @@ export const useRealEstateStore = defineStore('realEstate', () => {
       pagination.value = {
         total: result.total || 0,
         page: result.page || 1,
-        pageSize: result.pageSize || 10,
+        pageSize: result.pageSize || result.perPage || 10,
         totalPages: result.totalPages || 0,
       }
       if (!recentSearches.value.find(s => s.county === searchParams.value.county && s.district === searchParams.value.district)) {
@@ -95,6 +96,7 @@ export const useRealEstateStore = defineStore('realEstate', () => {
   function resetParams() {
     searchParams.value = {
       county: '台北市',
+      cityCode: 'a',
       district: '信義區',
       keyword: '',
       landCategory: '全部',

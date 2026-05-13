@@ -5,9 +5,11 @@ import csv
 import sqlite3
 import os
 import glob
+from pathlib import Path
 
-DB_PATH = '/opt/data/home/real_estate_spa/data/realdb/lvr_data.db'
-DATA_DIR = '/opt/data/home/real_estate_spa/data/lvr_txt'
+REPO_ROOT = Path(__file__).resolve().parent
+DB_PATH = REPO_ROOT / 'data' / 'realdb' / 'lvr_data.db'
+DATA_DIR = REPO_ROOT / 'data' / 'lvr_txt'
 
 # TXT 檔案的 31 欄位名稱 (with correct indices)
 TXT_FIELD_NAMES = [
@@ -22,10 +24,11 @@ TXT_FIELD_NAMES = [
 ]
 
 def create_database():
-    if os.path.exists(DB_PATH):
-        os.remove(DB_PATH)
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    if DB_PATH.exists():
+        DB_PATH.unlink()
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
@@ -137,7 +140,7 @@ def main():
     
     # Process all TXT files
     count = 0
-    for txt_file in sorted(glob.glob(os.path.join(DATA_DIR, '*.txt'))):
+    for txt_file in sorted(glob.glob(str(DATA_DIR / '*.txt'))):
         city_code = os.path.basename(txt_file)[0]
         records = parse_file(txt_file, city_code)
         
@@ -167,7 +170,7 @@ def main():
                     r['termination_info'], r['source']
                 ))
             count += len(records)
-            print(f"✅ Loaded {os.path.basename(txt_file)}: {len(records)} records")
+            print(f"Loaded {os.path.basename(txt_file)}: {len(records)} records")
     
     conn.commit()
     
@@ -178,12 +181,12 @@ def main():
     cursor.execute('SELECT * FROM lvr_records LIMIT 1')
     sample = cursor.fetchone()
     
-    print(f"\n📊 Statistics:")
+    print("\nStatistics:")
     print(f"   Total records inserted: {db_count:,}")
     print(f"   Database location: {DB_PATH}")
     
     if sample and len(sample) > 1:
-        print(f"\n📋 First record sample:")
+        print("\nFirst record sample:")
         print(f"   District:     {sample[2] if len(sample) > 2 else 'N/A'}")
         print(f"   Transaction:  {sample[3] if len(sample) > 3 else 'N/A'}")
         print(f"   Address:      {sample[4] if len(sample) > 4 else 'N/A'}")
@@ -193,14 +196,14 @@ def main():
     # Verify data quality
     cursor.execute('SELECT COUNT(*) FROM lvr_records WHERE address IS NOT NULL AND address != ""')
     with_addr = cursor.fetchone()[0]
-    print(f"\n✅ Verification:")
+    print("\nVerification:")
     print(f"   Records with address: {with_addr:,}")
     print(f"   Total: {db_count:,}")
     print(f"   Success rate: {with_addr/db_count*100:.1f}%")
     
     conn.close()
     print(f"\n{'=' * 60}")
-    print(f"✅ Database built successfully!")
+    print("Database built successfully!")
     print(f"{'=' * 60}")
 
 if __name__ == '__main__':

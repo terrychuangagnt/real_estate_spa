@@ -6,13 +6,17 @@ import os
 import csv
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 
-DATA_DIR = '/opt/data/home/real_estate_spa/data/lvr_txt'
-DB_PATH = '/opt/data/home/real_estate_spa/data/realdb/lvr_data.db'
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = REPO_ROOT / 'data' / 'lvr_txt'
+DB_PATH = REPO_ROOT / 'data' / 'realdb' / 'lvr_data.db'
 
 print(f"數據目錄: {DATA_DIR}")
 print(f"資料庫路徑: {DB_PATH}")
 print(f"Txt 檔案數量: {len([f for f in os.listdir(DATA_DIR) if f.endswith('.txt')])}")
+
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # Connect to SQLite
 conn = sqlite3.connect(DB_PATH)

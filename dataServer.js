@@ -71,7 +71,7 @@ app.get('/api/districts', (req, res) => {
   const city_code = req.query.city_code || req.query.city;
   if (!city_code) return res.json({ districts: [] });
   // Use LOWER() for case-insensitive match
-  allQuery('SELECT DISTINCT LOWER(district) as name FROM lvr_records WHERE LOWER(city_code) = ? ORDER BY name', [city_code])
+  allQuery('SELECT DISTINCT LOWER(district) as name FROM lvr_records WHERE LOWER(city_code) = ? ORDER BY name', [String(city_code).toLowerCase()])
     .then(rows => {
       res.json({ districts: rows.map(r => r.name), count: rows.length });
     });
@@ -86,10 +86,11 @@ app.get('/api/search', (req, res) => {
     minRooms, maxRooms: maxRoom,
     min_bathrooms: minBathrooms, max_bathrooms: maxBathrooms,
     minArea, maxArea, startDate, endDate,
-    page = 1, page_size: pageSize = 10,
-    sortBy = 'trade_date',
     sortOrder = 'desc'
   } = req.query;
+  const page = req.query.page || 1;
+  const pageSize = req.query.page_size || req.query.pageSize || req.query.perPage || 10;
+  const sortBy = req.query.sort_by || req.query.sortBy || 'trade_date';
 
   const validSortFields = ['trade_date', 'total_price', 'unit_price_sqm', 'land_area_sqm', 'building_area_sqm', 'id'];
   const safeSortField = validSortFields.includes(sortBy) ? sortBy : 'trade_date';
@@ -98,7 +99,7 @@ app.get('/api/search', (req, res) => {
   let where = [];
   let params = [];
 
-  if (city && city !== 'all') { where.push('LOWER(city_code) = ?'); params.push(city); }
+  if (city && city !== 'all') { where.push('LOWER(city_code) = ?'); params.push(String(city).toLowerCase()); }
   if (district) { where.push('LOWER(district) = ?'); params.push(decodeURIComponent(district).toLowerCase()); }
   if (transactionType) { where.push('LOWER(transaction_type) = ?'); params.push(transactionType.toLowerCase()); }
   if (totalPriceMin) { where.push('total_price >= ?'); params.push(parseFloat(totalPriceMin)); }
@@ -119,7 +120,9 @@ app.get('/api/search', (req, res) => {
   allQuery('SELECT COUNT(*) as total FROM lvr_records ' + whereClause, params)
     .then(countRows => {
       if (!countRows || countRows.length === 0 || countRows[0].total === 0) {
-        res.json({ data: [], total: 0, page: parseInt(page), perPage: parseInt(pageSize), totalPages: 0 });
+        const pageNum = parseInt(page);
+        const pageSizeNum = parseInt(pageSize);
+        res.json({ data: [], records: [], total: 0, page: pageNum, pageSize: pageSizeNum, perPage: pageSizeNum, totalPages: 0 });
         return;
       }
       const totalCount = countRows[0].total;
@@ -128,8 +131,8 @@ app.get('/api/search', (req, res) => {
       const offset = (pageNum - 1) * pageSizeNum;
       const sql = `SELECT * FROM lvr_records ${whereClause} ORDER BY ${safeSortField} ${safeSortOrder} LIMIT ${pageSizeNum} OFFSET ${offset}`;
       allQuery(sql, params)
-        .then(rows => res.json({
-          data: rows.map(r => ({
+        .then(rows => {
+          const mappedRows = rows.map(r => ({
             id: r.id, city_code: r.city_code, district: r.district, transaction_type: r.transaction_type,
             address: r.address, land_area_sqm: r.land_area_sqm, urban_zone: r.urban_zone,
             trade_date: r.trade_date, trade_date_formatted: formatDate(r.trade_date),
@@ -141,9 +144,13 @@ app.get('/api/search', (req, res) => {
             parking_price_display: formatPrice(r.parking_price),
             completion_date_formatted: formatDate(r.completion_date),
             source: r.source, project_name: r.project_name
-          })),
-          total: totalCount, page: pageNum, perPage: pageSizeNum, totalPages: Math.ceil(totalCount / pageSizeNum)
-        }));
+          }));
+          res.json({
+            data: mappedRows,
+            records: mappedRows,
+            total: totalCount, page: pageNum, pageSize: pageSizeNum, perPage: pageSizeNum, totalPages: Math.ceil(totalCount / pageSizeNum)
+          });
+        });
     });
 });
 

@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-import { watch, ref, onBeforeUnmount, toRaw } from 'vue'
+import { watch, onBeforeUnmount, toRaw } from 'vue'
 import L from 'leaflet'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
@@ -17,16 +17,27 @@ let clusterGroup = null
 
 function clearMarkers() {
   if (clusterGroup) {
-    if (toRaw(props.map)) {
-      toRaw(props.map).removeLayer(clusterGroup)
+    const map = toRaw(props.map)
+    if (map) {
+      map.removeLayer(clusterGroup)
     }
     clusterGroup.clearLayers()
     clusterGroup = null
   }
 }
 
+function isValidCoordinate(lat, lng) {
+  return Number.isFinite(lat)
+    && Number.isFinite(lng)
+    && lat >= -90
+    && lat <= 90
+    && lng >= -180
+    && lng <= 180
+}
+
 function addMarkers(records) {
-  if (!records || records.length === 0) return
+  const map = toRaw(props.map)
+  if (!map || !records || records.length === 0) return
 
   clusterGroup = L.markerClusterGroup({
     maxClusterRadius: 50,
@@ -36,9 +47,9 @@ function addMarkers(records) {
   })
 
   records.forEach((r) => {
-    const lat = r.lat || r.latitude
-    const lng = r.lng || r.longitude || r.lon
-    if (lat == null || lng == null) return
+    const lat = Number(r.lat)
+    const lng = Number(r.lng)
+    if (!isValidCoordinate(lat, lng)) return
 
     const price = r.unitPrice || r.totalPrice || '價格不詳'
     const tradeType = r.transactionType || '買賣'
@@ -53,8 +64,10 @@ function addMarkers(records) {
     clusterGroup.addLayer(marker)
   })
 
-  if (props.map) {
-    props.map.addLayer(clusterGroup)
+  if (clusterGroup.getLayers().length > 0) {
+    map.addLayer(clusterGroup)
+  } else {
+    clusterGroup = null
   }
 }
 
@@ -62,8 +75,9 @@ watch(
   () => props.records,
   (newRecords, oldRecords) => {
     if (newRecords !== oldRecords) {
-      if (clusterGroup && props.map) {
-        props.map.removeLayer(clusterGroup)
+      const map = toRaw(props.map)
+      if (clusterGroup && map) {
+        map.removeLayer(clusterGroup)
       }
       clearMarkers()
       addMarkers(newRecords)
@@ -76,7 +90,9 @@ watch(
   () => props.map,
   (newMap) => {
     if (newMap && clusterGroup) {
-      newMap.addLayer(clusterGroup)
+      toRaw(newMap).addLayer(clusterGroup)
+    } else if (newMap) {
+      addMarkers(props.records)
     }
   },
 )

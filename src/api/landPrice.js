@@ -15,10 +15,17 @@ const CITY_MAP = {
   'e': '高雄市', 'f': '新北市', 'g': '宜蘭縣', 'h': '桃園市',
   'i': '嘉義市', 'j': '新竹縣', 'k': '苗栗縣', 'm': '南投縣',
   'n': '彰化縣', 'o': '新竹市', 'p': '雲林縣', 'q': '嘉義縣',
-  't': '屏東縣', 'u': '花蓮縣', 'v': '台東縣', 'w': '金門縣',
+  't': '屏東縣', 'u': '花蓮縣', 'v': '臺東縣', 'w': '金門縣',
   'x': '澎湖縣'
 };
-const REVERSE_CITY_MAP = Object.fromEntries(Object.entries(CITY_MAP).map(([k,v]) => [v,k]));
+const CITY_NAME_ALIASES = {
+  '台東縣': 'v',
+  '臺東縣': 'v',
+};
+const REVERSE_CITY_MAP = {
+  ...Object.fromEntries(Object.entries(CITY_MAP).map(([k,v]) => [v,k])),
+  ...CITY_NAME_ALIASES,
+};
 
 // 交易類型對應
 const TRANSACTION_MAP = {
@@ -26,6 +33,20 @@ const TRANSACTION_MAP = {
   '預售屋': 2,
   '租賃': 3
 };
+
+function getCityCode(city) {
+  if (!city) return '';
+  const normalized = String(city).toLowerCase();
+  return CITY_MAP[normalized] ? normalized : (REVERSE_CITY_MAP[city] || '');
+}
+
+function wanToYuan(value) {
+  return value ? Number(value) * 10000 : '';
+}
+
+function wanPerPingToYuanPerSqm(value) {
+  return value ? Number(value) * 10000 / 3.306 : '';
+}
 
 // 轉換資料庫回傳的資料格式到前端使用的格式
 function transformRecord(row) {
@@ -67,8 +88,8 @@ function transformRecord(row) {
     // 車位資訊
     parkingType: row.parking_type || '',
     parkingArea: row.parking_area_sqm ? parseFloat(row.parking_area_sqm) : 0,
-    parkingPrice: row.parking_price || 0,
-    parkingPriceDisplay: row.parking_price ? formatPrice(row.parking_price) : '0',
+    parkingPrice: row.parking_price ? parseFloat(row.parking_price) / 10000 : 0,
+    parkingPriceDisplay: row.parking_price ? formatPrice(parseFloat(row.parking_price) / 10000) : '0',
     hasParking: row.parking_price > 0,
 
     // 來源資訊
@@ -113,21 +134,21 @@ export async function searchLandPrice(params) {
   try {
     // Map frontend params to backend snake_case params
     const queryParamMap = {
-      city_code: params.county ? REVERSE_CITY_MAP[params.county] : '',
+      city_code: getCityCode(params.cityCode || params.county),
       district: params.district || '',
       transaction_type: params.type || '',
-      min_price: params.minPrice || '',
-      max_price: params.maxPrice || '',
-      unit_price_min: params.unitPriceMin || '',
-      unit_price_max: params.unitPriceMax || '',
+      min_price: wanToYuan(params.minPrice),
+      max_price: wanToYuan(params.maxPrice),
+      unit_price_min: wanPerPingToYuanPerSqm(params.unitPriceMin),
+      unit_price_max: wanPerPingToYuanPerSqm(params.unitPriceMax),
       minArea: params.minArea || '',
       maxArea: params.maxArea || '',
       minRooms: params.minRooms || '',
       maxRooms: params.maxRooms || '',
-      minBathrooms: params.minBathrooms || '',
-      maxBathrooms: params.maxBathrooms || '',
+      min_bathrooms: params.minBathrooms || '',
+      max_bathrooms: params.maxBathrooms || '',
       page: params.page || 1,
-      page_size: params.pageSize || 10,
+      page_size: params.pageSize || params.perPage || 10,
       sort_by: params.sortBy === 'tradeDate' ? 'trade_date' : params.sortBy || 'trade_date',
       sortOrder: params.sortOrder || 'desc',
     };
@@ -143,20 +164,24 @@ export async function searchLandPrice(params) {
     if (!res.ok) throw new Error(`API 錯誤 ${res.status}`);
 
     const data = await res.json();
+    const rows = data.records || data.data || [];
+    const pageSize = data.pageSize || data.perPage || params.pageSize || params.perPage || 10;
     return {
-      data: (data.records || []).map(transformRecord),
+      data: rows.map(transformRecord),
       total: data.total || 0,
       page: data.page || 1,
-      pageSize: data.pageSize || 10,
+      pageSize,
+      perPage: pageSize,
       totalPages: data.totalPages || 0,
     };
   } catch (err) {
     console.warn('查詢失敗:', err.message);
-    return { data: [], total: 0, page: 1, pageSize: 10, totalPages: 0 };
+    return { data: [], total: 0, page: 1, pageSize: 10, perPage: 10, totalPages: 0 };
   }
 }
 
-export async function getDistricts(cityCode) {
+export async function getDistricts(city) {
+  const cityCode = getCityCode(city);
   if (!cityCode) return [];
 
   try {

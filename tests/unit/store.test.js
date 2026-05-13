@@ -154,7 +154,7 @@ describe('realEstate Store', () => {
       })
 
       await store.search({ county: '台北市', page: 1 })
-      expect(store.avgPrice).toBe('33') // (20+30+50)/3 = 33.33, rounded
+      expect(store.avgPrice).toBe(33) // (20+30+50)/3 = 33.33, rounded
     })
 
     it('should return 0 avgPrice with no records', () => {

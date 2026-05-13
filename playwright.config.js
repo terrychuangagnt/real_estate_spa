@@ -16,10 +16,18 @@ export default defineConfig({
   },
   reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
   outputDir: 'tests/screenshots',
-  webServer: {
-    command: 'npm run dev',
-    port: 5173,
-    reuseExistingServer: true,
-    timeout: 120000,
-  },
+  webServer: [
+    {
+      command: 'node dataServer.js',
+      url: 'http://localhost:3002/api/cities',
+      reuseExistingServer: true,
+      timeout: 120000,
+    },
+    {
+      command: 'npm run dev',
+      url: 'http://localhost:5173',
+      reuseExistingServer: true,
+      timeout: 120000,
+    },
+  ],
 })

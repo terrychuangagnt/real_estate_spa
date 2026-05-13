@@ -1,277 +1,56 @@
-# 實價查詢 SPA 測試報告
+# 實價登錄 SPA 測試報告
 
-## 📊 測試概覽
+## 狀態摘要
 
-| 項目 | 結果 |
-|------|------|
-| **測試框架** | Vitest 4.1.5 + Playwright |
-| **測試執行時間** | 2026-04-30 05:02:53 UTC+8 |
-| **總測試數** | **89 個測試** |
-| **通過** | ✅ **89** |
-| **失敗** | ❌ **0** |
-| **成功率** | **100%** |
+本報告整理目前 repo 內可見的測試狀態與待驗證事項。舊版文件曾標示「100% 通過」或「16/16 通過」，但那些結論不是本次修正後的最新完整驗證結果，因此不再作為目前狀態宣稱。
 
----
+## 測試分類
 
-## 📁 測試檔案索引
+| 分類 | 位置 | 依賴服務 | 目前說明 |
+|------|------|----------|----------|
+| Unit | `tests/unit/*.test.js` | 無，使用 mock | 需要重新執行 `npm test` 確認 |
+| Data integrity | `tests/data-integrity/*.test.js` | `dataServer.js` on port 3002 | 需要 API server 運行 |
+| Playwright E2E | `tests/e2e/*.spec.js` | Vite on 5173 + API on 3002 | `playwright.config.js` 已改為同時啟動兩個服務 |
+| Python/manual scripts | `tests/data-integrity/*.py`, 根目錄測試腳本 | 視腳本而定 | 尚未納入標準 npm script |
 
-| 分類 | 檔案 | 測試數 | 狀態 |
-|------|------|--------|------|
-| Unit | `tests/unit/date-format.test.js` | 14 | ✅ |
-| Unit | `tests/unit/store.test.js` | 13 | ✅ |
-| Unit | `tests/unit/city-map.test.js` | 8 | ✅ |
-| Integrity | `tests/data-integrity/city-coverage.test.js` | 46 | ✅ |
-| Integrity | `tests/data-integrity/pagination.test.js` | 4 | ✅ |
-| Integrity | `tests/data-integrity/empty-result.test.js` | 4 | ✅ |
-| **合計** | | **89** | **✅ 100%** |
+## E2E 啟動修正
 
----
+原狀況：Playwright `webServer` 只執行 `npm run dev`，因此 Vite 可以啟動，但前端透過 `/api` proxy 呼叫 API 時，`dataServer.js` 未必存在，會造成 E2E 結果不穩或失敗。
 
-## 1. Unit Tests — 日期與價格格式化 (`date-format.test.js`)
+目前修正：
 
-### 測試範圍
-- `formatDate()`: 民國紀年與西元年日期格式化
-- `formatPrice()`: 價格格式化與千分位
-- `transformRecord()`: 資料庫紀錄轉前端的轉換邏輯
+- `playwright.config.js` 使用 `webServer` 陣列。
+- 第一個服務啟動 `node dataServer.js`，等待 `http://localhost:3002/api/cities`。
+- 第二個服務啟動 `npm run dev`，等待 `http://localhost:5173`。
+- E2E 測試改用 `page.goto('/')`，讓 `baseURL` 統一由 config 控制。
 
-| # | 測試描述 | 結果 |
-|---|----------|------|
-| 1 | formatDate 處理 7 位數民國日期 `'1150306'` → `'115/03/06'` | ✅ PASS |
-| 2 | formatDate 處理 7 位數 `'1140101'` → `'114/01/01'` | ✅ PASS |
-| 3 | formatDate 處理 `'0121225'` → `'012/12/25'` | ✅ PASS |
-| 4 | formatDate 處理 8 位數西元年 `'20240306'` → `'2024/03/06'` | ✅ PASS |
-| 5 | formatDate 處理 `'19110101'` → `'1911/01/01'` | ✅ PASS |
-| 6 | formatDate 處理 `'20251231'` → `'2025/12/31'` | ✅ PASS |
-| 7 | formatDate 處理 `null` → `''` | ✅ PASS |
-| 8 | formatDate 處理 `undefined` → `''` | ✅ PASS |
-| 9 | formatDate 處理空字串 `''` → `''` | ✅ PASS |
-| 10 | formatDate 處理不合法輸入 `'2024-03-06'` 回傳原值 | ✅ PASS |
-| 11 | formatDate 處理 '2024/03/06' 回傳原值 | ✅ PASS |
-| 12 | formatPrice 正數含千分位 `'12345.67'` → `'12,346'` | ✅ PASS |
-| 13 | formatPrice 整數 `'1000'` → `'1,000'` | ✅ PASS |
-| 14 | formatPrice 0 → `'0'` | ✅ PASS |
+## 待驗證清單
 
----
+1. 執行 `npm test`，記錄 unit + data integrity 的實際通過/失敗數。
+2. 執行 `npx playwright test`，記錄 E2E 的實際通過/失敗數。
+3. 若 E2E 失敗，優先分類是服務啟動、selector 過期、實際功能 bug 或外部地圖資源問題。
+4. 若 data integrity 失敗，確認 `data/realdb/lvr_data.db` 是否存在且 schema 與 `dataServer.js` 查詢一致。
+5. 檢查舊手動 UI 測試提到的問題是否仍存在：
+   - 搜尋按鈕送出後欄位是否被重置。
+   - 行政區下拉是否仍 disabled。
+   - 地圖瓦片層是否空白。
 
-## 2. Unit Tests — Pinia Store (`store.test.js`)
+## 待補測試
 
-### 測試範圍
-- **狀態初始化**: 預設值檢查
-- **搜尋 action**: loading 狀態、成功/失敗處理
-- **分頁操作**: 頁碼遞增
-- **搜尋歷史**: 最多 5 筆、新增置前
-- **地圖模式**: 預設列表、切換 list/map、熱力圖開關
-- **Computed**: 平均價格計算、空資料處理
-- **重置參數**: resetParams 恢復預設
+| 功能 | 建議測試 |
+|------|----------|
+| `getCities()` | 成功回傳、API 錯誤、非陣列 response |
+| `getDistricts()` | 城市名稱/code 映射、空城市、API 錯誤 |
+| `searchLandPrice()` | 價格單位轉換、坪數與房間數參數、分頁參數、錯誤 fallback |
+| 搜尋頁 E2E | 選縣市、選行政區、送出查詢、結果與統計顯示 |
+| 地圖 E2E | 切換地圖模式、Leaflet container、marker/heatmap control |
+| 歷史頁 E2E | 搜尋後新增歷史、點擊歷史回填條件 |
 
-| # | 測試描述 | 結果 |
-|---|----------|------|
-| 1 | 初始狀態: records=[], loading=false, error=null | ✅ PASS |
-| 2 | 初始狀態: searchParams 縣市=台北市, 行政區=信義區 | ✅ PASS |
-| 3 | 初始狀態: page=1, pageSize=10 | ✅ PASS |
-| 4 | search action: loading=true → loading=false | ✅ PASS |
-| 5 | search 成功: records 被填入, total=150, totalPages=15 | ✅ PASS |
-| 6 | search 失敗: error 被設置 | ✅ PASS |
-| 7 | setPage 頁碼遞增 | ✅ PASS |
-| 8 | recentSearches 最多 5 筆 | ✅ PASS |
-| 9 | 新增搜尋置於最前 | ✅ PASS |
-| 10 | mapMode 預設為 'list' | ✅ PASS |
-| 11 | 切換 list ↔ map | ✅ PASS |
-| 12 | toggleHeatmap 開關交替 | ✅ PASS |
-| 13 | avgPrice (20+30+50)/3 → '33' | ✅ PASS |
-| 14 | 空 records: avgPrice=0 | ✅ PASS |
-| 15 | resetParams 恢復預設值 | ✅ PASS |
-
----
-
-## 3. Unit Tests — CITY_MAP 映射 (`city-map.test.js`)
-
-### 測試範圍
-- 21 個縣市 code 唯一性（單字母）
-- REVERSE_CITY_MAP 雙向映射一致性
-- key 城市名稱驗證
-
-| # | 測試描述 | 結果 |
-|---|----------|------|
-| 1 | CITY_MAP 包含恰好 21 個城市 | ✅ PASS |
-| 2 | 所有 code 為唯一單字母 | ✅ PASS |
-| 3 | code 無重複且包含 'a'~'x'（跳過 'l'） | ✅ PASS |
-| 4 | 包含關鍵城市：台北、台中、新北、桃園、金門、澎湖 | ✅ PASS |
-| 5 | REVERSE_CITY_MAP 所有城市名稱可映射回 code | ✅ PASS |
-| 6 | 雙向映射一致性 | ✅ PASS |
-| 7 | REVERSE 與 CITY_MAP 有相同 key 數量 | ✅ PASS |
-| 8 | 城市名稱無重複 | ✅ PASS |
-
----
-
-## 4. Data Integrity — 縣市覆蓋率 (`city-coverage.test.js`)
-
-### 測試範圍
-- 21 個縣市皆有 API 回傳
-- 每個縣市至少有 1 個行政區
-- 每個縣市至少 1 筆搜尋結果
-- code 與 CITY_MAP 完全一致
-- count 非負
-- 總和檢查
-
-| # | 測試描述 | 結果 |
-|---|----------|------|
-| 1 | /api/cities 回傳 21 個 city（含 name/code/count） | ✅ PASS |
-| 2 | 21× city_code 皆有行政區 | ✅ PASS |
-| 3 | 21× city_code 皆有搜尋結果（含 data/total/page/totalPages） | ✅ PASS |
-| 4 | API city codes 與 CITY_MAP 完全一致 | ✅ PASS |
-| 5 | 無 city count 為負值 | ✅ PASS |
-| 6 | 各城市 count 總和與全域搜尋 total 一致 | ✅ PASS |
-
----
-
-## 5. Data Integrity — 分頁一致性 (`pagination.test.js`)
-
-### 測試範圍
-- 不同 page_size 回傳相同 total
-- 相鄰頁無資料重疊
-- totalPages 計算正確
-- 最大頁碼回傳有效
-
-| # | 測試描述 | 結果 |
-|---|----------|------|
-| 1 | page_size=5/10/20 total 一致 | ✅ PASS |
-| 2 | page 1 & 2 無重疊資料 | ✅ PASS |
-| 3 | page_size=5/10/20/50 的 totalPages ≥ 正確值 | ✅ PASS |
-| 4 | 最大頁碼回傳有效資料 | ✅ PASS |
-
----
-
-## 6. Data Integrity — 極端條件 (`empty-result.test.js`)
-
-| # | 測試描述 | 結果 |
-|---|----------|------|
-| 1 | 不存在的區名稱：回傳空陣列而非錯誤 | ✅ PASS |
-| 2 | page_size=0：正常處理 | ✅ PASS |
-| 3 | page=999999：無崩潰，回傳有效結構 | ✅ PASS |
-| 4 | 缺 city_code：回傳有效結構 | ✅ PASS |
-
----
-
-## 📈 覆蓋率分析
-
-### 已覆蓋功能
-| 功能模組 | 狀態 | 測試數 |
-|----------|------|--------|
-| 日期格式化 (`formatDate`) | ✅ 完整覆蓋 | 12 |
-| 價格格式化 (`formatPrice`) | ✅ 完整覆蓋 | 6 |
-| 資料轉換 (`transformRecord`) | ✅ 完整覆蓋 | 5 |
-| Pinia state & actions | ✅ 完整覆蓋 | 13 |
-| Pinia computed | ✅ 完整覆蓋 | 4 |
-| CITY_MAP 雙向映射 | ✅ 完整覆蓋 | 8 |
-| API 資料完整性 | ✅ 完整覆蓋 | 46 |
-| 頁面无重疊/總數確認 | ✅ 完整覆蓋 | 4 |
-| 極端輸入處理 | ✅ 完整覆蓋 | 4 |
-
-### 待測試功能
-| 功能模組 | 說明 | 建議 |
-|----------|------|------|
-| `getDistricts()` API | 行政區查詢 API — 無 unit test 覆蓋 | 需要新增 mock/mock server |
-| `getCities()` API | 縣市清單 API — 無 unit test 覆蓋 | 需要新增 mock |
-| `searchLandPrice` 參數映射 | 13 個搜尋參數（minPrice/maxPrice/minArea/maxRooms 等） | 需要新增單元測試 |
-| E2E Playwright 測試 | History & Map 測試檔案存在，但尚未完整報告 | 需要執行並更新 |
-| Python 測試 | `error_recovery_test.py`, `load_test.py` | 需要執行並更新結果 |
-
-### 源碼功能覆蓋度（基於原始碼分析）
-
-`src/api/landPrice.js`:
-- `formatDate()` — ✅ 12/12 測試覆蓋
-- `formatPrice()` — ✅ 6/6 測試覆蓋
-- `transformRecord()` — ✅ 5/5 測試覆蓋
-- `searchLandPrice()` — ⚠️ 89%（參數映射部分未覆蓋）
-- `getDistricts()` — ❌ 0%（無測試）
-- `getCities()` — ❌ 0%（無測試）
-
-Pinia Store (`src/stores/realEstate.js`):
-- All computed/actions — ✅ 已覆蓋
-
----
-
-## 🏗️ 測試架構
-
-| 元件 | 版本 | 用途 |
-|------|------|------|
-| Vitest | 4.1.5 | 單元測試 + integrity 測試 |
-| jsdom | — | jsdom environment |
-| Playwright | — | E2E 瀏覽器測試 |
-| mock | vi.fn() | API mock (store test) |
-
----
-
-## 🚀 執行指令
+## 執行指令
 
 ```bash
-# 執行所有測試
 npm test
-
-# 產生 coverage 報告（需安裝 @vitest/coverage-v8）
-npm test -- --coverage
-
-# 執行 Playwright E2E
 npx playwright test
 ```
 
----
-
-## ✅ 總結
-
-| 指標 | 數值 |
-|------|------|
-| **總測試數** | 89 |
-| **通過** | 89 (100%) |
-| **失敗** | 0 (0%) |
-| **測試檔案數** | 6 個 |
-| **已覆蓋源碼函式** | 3/6 (50% main API) |
-| **待補測試功能** | `getDistricts`, `getCities`, 13 個搜尋參數 |
-
-**整體評分: 🎯 A+** — 核心功能測試完整，建議補充 API wrapper 層測試。
-
----
-
-## 🔍 手動 UI 測試報告 (2026-04-30 08:24 UTC+8)
-
-**測試工具**：瀏覽器工具（模擬使用者操作）
-**測試頁面**：`http://localhost:5173/#/search`, `/#/map`, `/#/history`
-
-### 測試結果總覽
-
-|| # | 測試項目 | 結果 | 備註 |
-||---|---------|------|------|
-|| 1 | 縣市下拉選單（21個選項） | ✅ PASS | 全部正常 |
-|| 2 | 行政區下拉選單 | ❌ DISABLED | 強制 disabled，無法互動 |
-|| 3 | 關鍵詞輸入 | ✅ PASS | 「中山路」輸入正常 |
-|| 4 | 價格範圍輸入 | ✅ PASS | (1000-5000) 設定成功 |
-|| 5 | 價格 +/- 按鈕 | ✅ PASS | 數值正常變動 |
-|| 6 | 坪數 +/- 按鈕 | ✅ PASS | 數值正常變動 |
-|| 7 | 交易類型下拉選單 | ✅ PASS | 4選項正常 |
-|| 8 | 搜尋歷史頁 | ✅ PASS | 頁面載入正常 |
-|| 9 | 地圖頁面（瓦片層） | ❌ 空白 | DOM 存在但瓦片未顯示 |
-|| 10 | **開始查詢按鈕（嚴重 Bug）** | ❌ FAILED | 表單重置 + 縣市跳高雄市 |
-
-### 🐛 發現的 Bug 清單
-
-#### Bug #1：搜尋按鈕觸發表單重置 + 縣市異常跳轉（🔴 嚴重）
-- **步驟**：輸入搜尋條件 → 點擊「開始查詢」
-- **預期**：執行搜尋並顯示結果
-- **實際**：所有表單欄位被清空重置，且「縣市」下拉選單異常跳轉為「高雄市」
-- **影響**：核心搜尋功能完全無法使用
-- **建議修復**：檢查搜尋 handler 是否意外調用了 `resetParams()`，確認 `v-model` 綁定無衝突
-
-#### Bug #2：行政區下拉選單永遠 disabled（🟡 中等）
-- **步驟**：選擇縣市 → 觀察行政區下拉選單
-- **預期**：根據選中的縣市載入對應行政區，可互動
-- **實際**：元件處於 disabled 狀態，無法點擊
-- **影響**：使用者無法過濾行政區
-- **建議修復**：檢查 `loadDistricts()` 觸發條件與行政區陣列狀態
-
-#### Bug #3：地圖頁面瓦片層空白（🟡 中等）
-- **步驟**：導航至 `/#/map`
-- **預期**：顯示 Leaflet 地圖瓦片
-- **實際**：DOM 容器存在，但瓦片層完全空白
-- **影響**：地圖視覺化功能不可用
-- **建議修復**：檢查 Leaflet CSS/JS 載入、瓦片 URL 可用性
+更新報告時請填入實際執行日期、測試總數、通過數、失敗數與失敗原因，不要沿用舊的 100% 結論。

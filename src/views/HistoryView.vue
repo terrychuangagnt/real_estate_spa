@@ -79,10 +79,18 @@ function clearHistory() {
 const chartData = computed(() => {
   const counts = {}
   store.records.forEach(r => {
-    counts[r.landCategory] = (counts[r.landCategory] || 0) + 1
+    const category = getRecordCategory(r)
+    counts[category] = (counts[category] || 0) + 1
   })
   return Object.keys(counts).map(cat => ({ category: cat, count: counts[cat] }))
 })
+
+function getRecordCategory(record) {
+  return record.buildingType
+    || record.propertyType
+    || record.transactionType
+    || '未分類'
+}
 </script>
 
 <style scoped>
