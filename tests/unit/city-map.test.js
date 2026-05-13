@@ -10,7 +10,7 @@ const CITY_MAP = {
   'e': '高雄市', 'f': '新北市', 'g': '宜蘭縣', 'h': '桃園市',
   'i': '嘉義市', 'j': '新竹縣', 'k': '苗栗縣', 'm': '南投縣',
   'n': '彰化縣', 'o': '新竹市', 'p': '雲林縣', 'q': '嘉義縣',
-  't': '屏東縣', 'u': '花蓮縣', 'v': '台東縣', 'w': '金門縣',
+  't': '屏東縣', 'u': '花蓮縣', 'v': '臺東縣', 'w': '金門縣',
   'x': '澎湖縣'
 }
 
@@ -48,6 +48,10 @@ describe('CITY_MAP consistency', () => {
     expect(CITY_MAP['h']).toBe('桃園市')
     expect(CITY_MAP['w']).toBe('金門縣')
     expect(CITY_MAP['x']).toBe('澎湖縣')
+  })
+
+  it('台東縣 should use 臺 not 台', () => {
+    expect(CITY_MAP['v']).toBe('臺東縣')
   })
 })
 

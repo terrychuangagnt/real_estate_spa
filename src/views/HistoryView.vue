@@ -10,13 +10,13 @@
           </div>
         </template>
 
-        <el-table :data="store.recentSearches" style="width: 100%">
+        <el-table v-if="store.recentSearches.length > 0" :data="store.recentSearches" style="width: 100%">
           <el-table-column prop="county" label="縣市" width="100" />
           <el-table-column prop="district" label="行政區" width="100" />
           <el-table-column prop="time" label="搜尋時間" />
         </el-table>
 
-        <el-empty v-if="store.recentSearches.length === 0" description="尚無搜尋紀錄" />
+        <el-empty v-else description="尚無搜尋紀錄" />
       </el-card>
     </el-col>
 

@@ -24,7 +24,7 @@
                 placeholder="請選擇行政區"
                 filterable
                 :loading="districtsLoading"
-                :disabled="currentDistricts.length === 0"
+                :disabled="!form.county"
               >
                 <el-option
                   v-for="d in currentDistricts"

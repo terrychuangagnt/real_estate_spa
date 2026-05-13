@@ -223,11 +223,11 @@
 ## 10. 注意事項
 
 ### 10.1 限制
-- **HTTPS** : HTTPS
-- **HTTPS** : HTTPS
-- **HTTPS** : HTTPS
+- **離線環境**：資料庫需先由 `python build_db.py` 從 `data/lvr_txt/` 重建，無網路環境下無法取得新資料
+- **地圖 Tiles**：地圖功能依賴 OpenStreetMap，離線環境無法載入底圖
+- **資料範圍**：目前僅涵蓋 2023–2024 年資料，部分縣市資料筆數有限
 
 ### 10.2 已知問題
-- **HTTPS** : HTTPS
-- **HTTPS** : HTTPS
-- **HTTPS** : HTTPS
+- **座標缺失**：實價登錄原始資料不含 GPS 座標，地圖標記與熱力圖僅在有座標的記錄上顯示
+- **SQLite 不提交**：`data/realdb/lvr_data.db` 不進 git，乾淨 clone 後須執行 `python build_db.py` 重建
+- **分頁 totalPages 計算**：極端 pageSize 設定時 `totalPages` 可能與 `Math.ceil` 差 1，目前以 `>= expectedPages - 1` 驗證
